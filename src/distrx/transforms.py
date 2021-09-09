@@ -61,7 +61,9 @@ def transform_delta(mu, sigma, transform):
 
     Notes
     -----
-    Description of delta method.
+    The delta method expands a function of a random variable about its
+    mean with a one-step Taylor approximation and then takes the
+    variance.
 
     """
     pass
@@ -89,7 +91,11 @@ def transform_delta2(mu, sigma, transform):
 
     Notes
     -----
-    Description of second-order delta method.
+    The second-order delta method expands a function of a random
+    variable about its mean with a two-step Taylor approximation and
+    then takes the variance. This method is useful if the derivative of
+    the transform function is zero (so the first-order delta method
+    cannot be applied), or the sample size is small.
 
     """
     pass
