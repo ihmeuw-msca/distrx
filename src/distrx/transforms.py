@@ -42,6 +42,11 @@ def transform_data(mu, sigma, transform, method='delta'):
 def transform_delta(mu, sigma, transform):
     """Transform data using the delta method.
 
+    Transform data, in the form of sample statistics and their standard
+    errors, from one space to another using a given transform function
+    and the delta method. No assumptions are made about the underlying
+    distributions of the given data.
+
     Parameters
     ----------
     mu : float or array_like of float
@@ -71,6 +76,11 @@ def transform_delta(mu, sigma, transform):
 
 def transform_delta2(mu, sigma, transform):
     """Transform data using the second-order delta method.
+
+    Transform data, in the form of sample statistics and their standard
+    errors, from one space to another using a given transform function
+    and the second-order delta method. No assumptions are made about
+    the underlying distributions of the given data.
 
     Parameters
     ----------
