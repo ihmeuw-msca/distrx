@@ -30,9 +30,9 @@ def transform_data(mu, sigma, transform, method='delta'):
 
     Returns
     -------
-    mu_transform : array_like of float
+    mu_transform : float or array_like of float
         Vector of sample stastistics in the transform space.
-    sigma_transform : array_like of float
+    sigma_transform : float or array_like of float
         Vector of standard errors in the transform space.
 
     """
@@ -40,15 +40,75 @@ def transform_data(mu, sigma, transform, method='delta'):
 
 
 def transform_delta(mu, sigma, transform):
-    """Transform data using the delta method."""
+    """Transform data using the delta method.
+
+    Parameters
+    ----------
+    mu : float or array_like of float
+        Vector of sample statistics.
+    sigma : float or array_like of float
+        Vector of standard errors.
+    transform : {'log', 'logit', array_like of function}
+        Transform function. Users may define a transform function by
+        supplying a function and its derivative.
+
+    Returns
+    -------
+    mu_transform : float or array_like of float
+        Vector of sample statistics in the transform space.
+    sigma_transform : float or array_like of float
+        Vector of standard errors in the transform space.
+
+    Notes
+    -----
+    Description of delta method.
+
+    """
     pass
 
 
 def transform_delta2(mu, sigma, transform):
-    """Transform data using the second-order delta method."""
+    """Transform data using the second-order delta method.
+
+    Parameters
+    ----------
+    mu : float or array_like of float
+        Vector of sample statistics.
+    sigma : float or array_like of float
+        Vector of standard errors.
+    transform : {'log', 'logit', array_like of function}
+        Transform function. Users may define a transform function by
+        supplying a function and its first two derivatives.
+
+    Returns
+    -------
+    mu_transform : float or array_like of float
+        Vector of sample statistics in transform space.
+    sigma_transform : float or array_like of float
+        Vector of standard errors in transform space.
+
+    Notes
+    -----
+    Description of second-order delta method.
+
+    """
     pass
 
 
-def get_transform(transform, order=1):
-    """Get vector of transform function and its derivatives."""
+def get_transform(transform, order=0):
+    """Get transform function and its derivative(s).
+
+    Parameters
+    ----------
+    transform : {'log', 'logit'}
+        Transform function.
+    order : {0, 1, 2}, optional
+        Highest order of derivative needed.
+
+    Returns
+    -------
+    transform : function or array_like of function
+        Transform function and its derivative(s).
+
+    """
     pass
