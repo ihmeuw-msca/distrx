@@ -15,21 +15,21 @@ def test_transform_transform_value():
 
 def test_transform_order_value():
     """Raise ValueError for invalid `order`."""
-    for transform in ['log', 'logit']:
+    for transform in ['log', 'logit', 'exp', 'expit']:
         with pytest.raises(ValueError):
             get_transform(transform, 3)
 
 
 def test_transform_ouput_len():
     """Length of output should correspond to `order`."""
-    for transform in ['log', 'logit']:
+    for transform in ['log', 'logit', 'exp', 'expit']:
         assert len(get_transform(transform, 1)) == 2
         assert len(get_transform(transform, 2)) == 3
 
 
 def test_transform_output_type():
     """Type of output should correspond to `order`."""
-    for transform in ['log', 'logit']:
+    for transform in ['log', 'logit', 'exp', 'expit']:
         assert isinstance(get_transform(transform), types.FunctionType)
         assert isinstance(get_transform(transform, 0), types.FunctionType)
         for order in [1, 2]:
