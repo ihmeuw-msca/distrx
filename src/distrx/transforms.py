@@ -3,6 +3,12 @@
 Transform data, in the form of sample statistics and their standard
 errors, from one space to another using a given transform function.
 
+TODO:
+* Implement transform_delta2
+* Implement transform_data
+* Add typing in function definition?
+* Add user-defined transform function
+
 """
 import numpy as np
 
@@ -17,26 +23,24 @@ def transform_data(mu, sigma, transform, method='delta'):
 
     Parameters
     ----------
-    mu : float or array_like of float
-        Vector of sample statistics.
-    sigma : float or array_like of float
-        Vector of standard errors.
-    transform : {'log', 'logit', array_like of function}
-        Transform function. Users may define a transform function by
-        supplying a function and its derivative. If `method` is
-        'delta2', the second derivative is also required.
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
     method : {'delta, 'delta2'}, optional
         Method used to transform data.
 
     Returns
     -------
-    mu_transform : float or array_like of float
-        Vector of sample stastistics in the transform space.
-    sigma_transform : float or array_like of float
-        Vector of standard errors in the transform space.
+    mu_transform : numpy.ndarray
+        Sample stastistics in the transform space.
+    sigma_transform : numpy.ndarray
+        Standard errors in the transform space.
 
     """
-    pass
+    return
 
 
 def transform_delta(mu, sigma, transform):
@@ -49,20 +53,19 @@ def transform_delta(mu, sigma, transform):
 
     Parameters
     ----------
-    mu : float or array_like of float
-        Vector of sample statistics.
-    sigma : float or array_like of float
-        Vector of standard errors.
-    transform : {'log', 'logit', array_like of function}
-        Transform function. Users may define a transform function by
-        supplying a function and its derivative.
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
 
     Returns
     -------
-    mu_transform : float or array_like of float
-        Vector of sample statistics in the transform space.
-    sigma_transform : float or array_like of float
-        Vector of standard errors in the transform space.
+    mu_transform : numpy.ndarray
+        Sample statistics in the transform space.
+    sigma_transform : numpy.ndarray
+        Standard errors in the transform space.
 
     Notes
     -----
@@ -71,7 +74,17 @@ def transform_delta(mu, sigma, transform):
     variance.
 
     """
-    pass
+    # Check mu and sigma
+    mu = np.array(mu)
+    sigma = np.array(sigma)
+    if len(mu) != len(sigma):
+        raise ValueError("Lengths of mu and sigma don't match.")
+    if np.any(sigma <= 0.0):
+        raise ValueError("Sigma values must be positive.")
+
+    # Approximate transformed data
+    transform = get_transform(transform, 1)
+    return transform[0](mu), sigma*transform[1](mu)**2
 
 
 def transform_delta2(mu, sigma, transform):
@@ -84,20 +97,19 @@ def transform_delta2(mu, sigma, transform):
 
     Parameters
     ----------
-    mu : float or array_like of float
-        Vector of sample statistics.
-    sigma : float or array_like of float
-        Vector of standard errors.
-    transform : {'log', 'logit', array_like of function}
-        Transform function. Users may define a transform function by
-        supplying a function and its first two derivatives.
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
 
     Returns
     -------
-    mu_transform : float or array_like of float
-        Vector of sample statistics in transform space.
-    sigma_transform : float or array_like of float
-        Vector of standard errors in transform space.
+    mu_transform : numpy.ndarray
+        Sample statistics in transform space.
+    sigma_transform : numpy.ndarray
+        Standard errors in transform space.
 
     Notes
     -----
@@ -108,7 +120,7 @@ def transform_delta2(mu, sigma, transform):
     cannot be applied), or the sample size is small.
 
     """
-    pass
+    return
 
 
 def get_transform(transform, order=0):
@@ -140,7 +152,7 @@ def get_transform(transform, order=0):
     # Define transform functions
     transform_dict = {
         'log': [
-            lambda x: np.log,
+            np.log,
             lambda x: 1/x,
             lambda x: -1/x**2,
         ], 'logit': [
@@ -148,9 +160,9 @@ def get_transform(transform, order=0):
             lambda x: 1/(x*(1 - x)),
             lambda x: (2*x - 1)/(x**2*(1 - x)**2)
         ], 'exp': [
-            lambda x: np.exp,
-            lambda x: np.exp,
-            lambda x: np.exp
+            np.exp,
+            np.exp,
+            np.exp
         ], 'expit': [
             lambda x: 1/(1 + np.exp(-x)),
             lambda x: np.exp(-x)/(1 + np.exp(-x))**2,
