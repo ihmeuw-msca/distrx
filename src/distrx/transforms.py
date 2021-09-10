@@ -64,6 +64,13 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors in the transform space.
 
     """
+    # Check method
+    if method not in ['delta', 'delta2']:
+        raise ValueError(f"Invalid method '{method}'.")
+
+    # Approximate transformed data
+    if method == 'delta':
+        return transform_delta(mu, sigma, transform)
     return
 
 
@@ -108,7 +115,7 @@ def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
         raise ValueError("Sigma values must be positive.")
 
     # Check transform
-    if transform not in ['log', 'logit', 'exp', 'expit']:
+    if transform not in TRANSFORM_DICT:
         raise ValueError(f"Invalid transform '{transform}'.")
 
     # Approximate transformed data
