@@ -2,7 +2,6 @@
 
 TODO:
 * Add random vectors and vector lengths
-* Create global list of transforms
 * Implement delta2 tests
 * Implement transform_data tests
 
@@ -10,42 +9,59 @@ TODO:
 import numpy as np
 import pytest
 
-from distrx.transforms import transform_delta
+from distrx.transforms import transform_data, transform_delta
 
 
-def test_transform_delta_input_len():
-    """Raise ValueError if lengths of mu and sigma don't match."""
-    for transform in ['log', 'logit', 'exp', 'expit']:
+TRANSFORM_LIST = ['log', 'logit', 'exp', 'expit']
+FUNCTION_LIST = [transform_data, transform_delta]
+
+
+@pytest.mark.parametrize("transform", TRANSFORM_LIST)
+def test_method_name_valid(transform):
+    """Raise ValueError for invalue `method`."""
+    vals = [0.1]*2
+    with pytest.raises(ValueError):
+        transform_data(vals, vals, transform, method='dummy') 
+
+
+@pytest.mark.parametrize("function", FUNCTION_LIST)
+def test_input_len_match(function):
+    """Raise ValueError if lengths of input vectors don't match."""
+    for transform in TRANSFORM_LIST:
         with pytest.raises(ValueError):
-            transform_delta([0.1]*2, [0.1]*3, transform)
+            function([0.1]*2, [0.1]*3, transform)
 
 
-def test_transform_delta_sigma():
+@pytest.mark.parametrize("function", FUNCTION_LIST)
+def test_sigma_positive(function):
     """Raise ValueError if `sigma` contains non-positive values."""
-    for transform in ['log', 'logit', 'exp', 'expit', [np.sin, np.cos]]:
+    for transform in TRANSFORM_LIST:
         vals = [0.1, -0.1]
         with pytest.raises(ValueError):
             transform_delta(vals, vals, transform)
 
 
-def test_transform_delta_transform():
+@pytest.mark.parametrize("function", FUNCTION_LIST)
+def test_transform_name_valid(function):
     """Raise ValueError for invalid `transform`."""
     with pytest.raises(ValueError):
         transform_delta([0.1], [0.1], 'dummy')
 
 
-def test_transform_delta_output_type():
+@pytest.mark.parametrize("function", FUNCTION_LIST)
+def test_output_type(function):
     """Output should be numpy arrays."""
     vals = [0.1]*2
-    for transform in ['log', 'logit', 'exp', 'expit']:
+    for transform in TRANSFORM_LIST:
         mu, sigma = transform_delta(vals, vals, transform)
         assert isinstance(mu, np.ndarray)
         assert isinstance(sigma, np.ndarray)
 
 
-def test_transform_delta_outout_len():
+@pytest.mark.parametrize("function", FUNCTION_LIST)
+def test_outout_len_match(function):
     """Length of output vectors should match."""
     vals = [0.1]*2
-    for transform in ['log', 'logit', 'exp', 'expit']:
+    for transform in TRANSFORM_LIST:
         mu, sigma = transform_delta(vals, vals, transform)
         assert len(mu) == len(sigma)
