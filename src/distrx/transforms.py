@@ -64,14 +64,10 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors in the transform space.
 
     """
-    # Check method
-    if method not in ['delta', 'delta2']:
-        raise ValueError(f"Invalid method '{method}'.")
-
-    # Approximate transformed data
+    mu, sigma = np.array(mu), np.array(sigma)
+    check_input(mu, sigma, transform, method)
     if method == 'delta':
         return transform_delta(mu, sigma, transform)
-    return
 
 
 def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
@@ -106,19 +102,8 @@ def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
     variance.
 
     """
-    # Check mu and sigma
-    mu = np.array(mu)
-    sigma = np.array(sigma)
-    if len(mu) != len(sigma):
-        raise ValueError("Lengths of mu and sigma don't match.")
-    if np.any(sigma <= 0.0):
-        raise ValueError("Sigma values must be positive.")
-
-    # Check transform
-    if transform not in TRANSFORM_DICT:
-        raise ValueError(f"Invalid transform '{transform}'.")
-
-    # Approximate transformed data
+    mu, sigma = np.array(mu), np.array(sigma)
+    check_input(mu, sigma, transform)
     mu_trans = TRANSFORM_DICT[transform][0](mu)
     sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)**2
     return mu_trans, sigma_trans
@@ -158,4 +143,83 @@ def transform_delta2(mu: npt.ArrayLike, sigma: npt.ArrayLike,
     cannot be applied), or the sample size is small.
 
     """
+    mu, sigma = np.array(mu), np.array(sigma)
+    check_input(mu, sigma, transform)
     return
+
+
+def check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
+                method: str = None) -> None:
+    """Run checks on input data.
+
+    Parameters
+    ----------
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
+    method : {None, 'delta', 'delta2'}, optional
+        Method used to transform data.
+
+    """
+    check_lengths_match(mu, sigma)
+    check_sigma_positive(sigma)
+    check_transform_valid(transform)
+    if method is not None:
+        check_method_valid(method)
+
+
+def check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
+    """Check that `mu` and `sigma` have the same lengths.
+
+    Parameters
+    ----------
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+
+    """
+    if len(mu) != len(sigma):
+        raise ValueError("Lengths of mu and sigma don't match.")
+
+
+def check_sigma_positive(sigma: npt.ArrayLike) -> None:
+    """Check that `sigma` is positive.
+
+    Parameters
+    ----------
+    sigma : array_like
+        Standard errors.
+
+    """
+    if np.any(sigma <= 0):
+        raise ValueError("Sigma values must be positive.")
+
+
+def check_transform_valid(transform: str) -> None:
+    """Check that `transform` is in TRANSFORM_DICT.
+
+    Parameters
+    ----------
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
+
+    """
+    if transform not in TRANSFORM_DICT:
+        raise ValueError(f"Invalid transform '{transform}'.")
+
+
+def check_method_valid(method: str) -> None:
+    """Check that `method` is in ['delta', 'delta2'].
+
+    Parameters
+    ----------
+    method : {'delta', 'delta2'}
+        Method used to transform data.
+
+    """
+    if method not in ['delta', 'delta2']:
+        raise ValueError(f"Invalid method '{method}'.")
