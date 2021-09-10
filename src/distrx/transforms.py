@@ -9,6 +9,8 @@ TODO:
 * Add user-defined transform function
 
 """
+from typing import Tuple
+
 import numpy as np
 import numpy.typing as npt
 
@@ -35,7 +37,7 @@ TRANSFORM_DICT = {
 
 
 def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
-                   method: str = 'delta') -> tuple[np.ndarray, np.ndarray]:
+                   method: str = 'delta') -> Tuple[np.ndarray, np.ndarray]:
     """Transform data from one space to another.
 
     Transform data, in the form of sample statistics and their standard
@@ -66,7 +68,7 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
 
 
 def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
-                    transform: str) -> tuple[np.ndarray, np.ndarray]:
+                    transform: str) -> Tuple[np.ndarray, np.ndarray]:
     """Transform data using the delta method.
 
     Transform data, in the form of sample statistics and their standard
@@ -116,7 +118,7 @@ def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
 
 
 def transform_delta2(mu: npt.ArrayLike, sigma: npt.ArrayLike,
-                     transform: str) -> tuple[np.ndarray, np.ndarray]:
+                     transform: str) -> Tuple[np.ndarray, np.ndarray]:
     """Transform data using the second-order delta method.
 
     Transform data, in the form of sample statistics and their standard
