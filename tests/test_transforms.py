@@ -9,12 +9,13 @@ TODO:
 import numpy as np
 import pytest
 
-from distrx.transforms import transform_data, transform_delta, transform_delta2
+from distrx.transforms import transform_data, delta_method
 
 
 TRANSFORM_LIST = ['log', 'logit', 'exp', 'expit']
-FUNCTION_LIST = [transform_data, transform_delta, transform_delta2]
+FUNCTION_LIST = [transform_data, delta_method]
 VALS = [0.1]*2
+
 
 @pytest.mark.parametrize("transform", TRANSFORM_LIST)
 def test_method_name_valid(transform):
@@ -38,14 +39,6 @@ def test_sigma_positive(function):
     for transform in TRANSFORM_LIST:
         with pytest.raises(ValueError):
             function(vals, vals, transform)
-
-
-def test_kurtosis_positive(function):
-    """Raise ValueError if `kurtosis` contains non-positive values."""
-    vals = VALS + [-0.1]
-    for transform in TRANSFORM_LIST:
-        with pytest.raises(ValueError):
-            transform_delta2(vals, VALS + [0.1], vals, transform) 
 
 
 @pytest.mark.parametrize("function", FUNCTION_LIST)

@@ -34,20 +34,17 @@ TRANSFORM_DICT = {
         lambda x: np.exp(-x)*(np.exp(-x) - 1)/(1 + np.exp(-x))**3
     ]
 }
+METHOD_LIST = ['delta']
 
 
 def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
-                   method: str = 'delta', kurtosis: npt.ArrayLike = None) -> \
-                   Tuple[np.ndarray, np.ndarray]:
+                   method: str = 'delta') -> Tuple[np.ndarray, np.ndarray]:
     """Transform data from one space to another.
 
     Transform data, in the form of sample statistics and their standard
     errors, from one space to another using a given transform function.
     No assumptions are made about the underlying distributions of the
     given data.
-
-    If `method` is 'delta2' and `kurtosis` is None, uses the fourth
-    non-central moment of the Gaussian distribution, 3*`sigma`**4.
 
     Parameters
     ----------
@@ -57,11 +54,8 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors.
     transform : {'log', 'logit', 'exp', 'expit'}
         Transform function.
-    method : {'delta, 'delta2'}, optional
+    method : {'delta'}, optional
         Method used to transform data.
-    kurtosis : array_like, optional
-        Fourth non-central moments.
-        If None, uses Gaussian values 3*`sigma`**4.
 
     Returns
     -------
@@ -72,15 +66,13 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    kurtosis = 3*sigma**4 if kurtosis is None else np.array(kurtosis)
-    check_input(mu, sigma, transform, method, kurtosis)
+    check_input(mu, sigma, transform, method)
     if method == 'delta':
-        return transform_delta(mu, sigma, transform)
-    return transform_delta2(mu, sigma, kurtosis, transform)
+        return delta_method(mu, sigma, transform)
 
 
-def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
-                    transform: str) -> Tuple[np.ndarray, np.ndarray]:
+def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
+                 Tuple[np.ndarray, np.ndarray]:
     """Transform data using the delta method.
 
     Transform data, in the form of sample statistics and their standard
@@ -112,59 +104,14 @@ def transform_delta(mu: npt.ArrayLike, sigma: npt.ArrayLike,
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    check_input(mu, sigma, transform)
+    check_input(mu, sigma, transform, 'delta')
     mu_trans = TRANSFORM_DICT[transform][0](mu)
     sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)
     return mu_trans, sigma_trans
 
 
-def transform_delta2(mu: npt.ArrayLike, sigma: npt.ArrayLike,
-                     kurtosis: npt.ArrayLike, transform: str) -> \
-                     Tuple[np.ndarray, np.ndarray]:
-    """Transform data using the second-order delta method.
-
-    Transform data, in the form of sample statistics and their standard
-    errors, from one space to another using a given transform function
-    and the second-order delta method. No assumptions are made about
-    the underlying distributions of the given data.
-
-    Parameters
-    ----------
-    mu : array_like
-        Sample statistics.
-    sigma : array_like
-        Standard errors.
-    kurtosis : array_like
-        Fourth non-central moments.
-    transform : {'log', 'logit', 'exp', 'expit'}
-        Transform function.
-    Returns
-    -------
-    mu_trans : numpy.ndarray
-        Sample statistics in the transform space.
-    sigma_trans : numpy.ndarray
-        Standard errors in the transform space.
-
-    Notes
-    -----
-    The second-order delta method expands a function of a random
-    variable about its mean with a two-step Taylor approximation and
-    then takes the variance. This method is useful if the derivative of
-    the transform function is zero (so the first-order delta method
-    cannot be applied), or the sample size is small.
-
-    """
-    mu, sigma, kurtosis = np.array(mu), np.array(sigma), np.array(kurtosis)
-    check_input(mu, sigma, transform, kurtosis)
-    mu_trans = TRANSFORM_DICT[transform][0](mu) + \
-        sigma**2*TRANSFORM_DICT[transform][2](mu)/2
-    sigma_trans = np.sqrt(sigma**2*TRANSFORM_DICT[transform][1]**2 +
-                          kurtosis*TRANSFORM_DICT[transform][2]**2/2)
-    return mu_trans, sigma_trans
-
-
 def check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
-                method: str = None, kurtosis: npt.ArrayLike = None) -> None:
+                method: str) -> None:
     """Run checks on input data.
 
     Parameters
@@ -175,20 +122,14 @@ def check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors.
     transform : {'log', 'logit', 'exp', 'expit'}
         Transform function.
-    method : {None, 'delta', 'delta2'}, optional
+    method : {'delta'}
         Method used to transform data.
-    kurtosis : array_like
-        Fourth non-central moments.
 
     """
     check_lengths_match(mu, sigma)
     check_sigma_positive(sigma)
     check_transform_valid(transform)
-    if method is not None:
-        check_method_valid(method)
-    if kurtosis is not None:
-        check_lengths_match(mu, kurtosis)
-        check_sigma_positive(kurtosis)
+    check_method_valid(method)
 
 
 def check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
@@ -241,5 +182,5 @@ def check_method_valid(method: str) -> None:
         Method used to transform data.
 
     """
-    if method not in ['delta', 'delta2']:
+    if method not in METHOD_LIST:
         raise ValueError(f"Invalid method '{method}'.")
