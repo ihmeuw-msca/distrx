@@ -18,20 +18,16 @@ import numpy.typing as npt
 TRANSFORM_DICT = {
     'log': [
         np.log,
-        lambda x: 1/x,
-        lambda x: -1/x**2,
+        lambda x: 1/x
     ], 'logit': [
         lambda x: np.log(x/(1 - x)),
-        lambda x: 1/(x*(1 - x)),
-        lambda x: (2*x - 1)/(x**2*(1 - x)**2)
+        lambda x: 1/(x*(1 - x))
     ], 'exp': [
-        np.exp,
         np.exp,
         np.exp
     ], 'expit': [
         lambda x: 1/(1 + np.exp(-x)),
-        lambda x: np.exp(-x)/(1 + np.exp(-x))**2,
-        lambda x: np.exp(-x)*(np.exp(-x) - 1)/(1 + np.exp(-x))**3
+        lambda x: np.exp(-x)/(1 + np.exp(-x))**2
     ]
 }
 METHOD_LIST = ['delta']
