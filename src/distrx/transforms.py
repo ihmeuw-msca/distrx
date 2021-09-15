@@ -10,6 +10,7 @@ TODO:
 
 """
 from typing import Tuple
+import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -152,7 +153,9 @@ def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
         Standard errors.
 
     """
-    if np.any(sigma <= 0):
+    if np.any(sigma == 0):
+        warnings.warn("Sigma vector contains zeros.")
+    if np.any(sigma < 0):
         raise ValueError("Sigma values must be positive.")
 
 
