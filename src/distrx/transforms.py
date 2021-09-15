@@ -4,9 +4,9 @@ Transform data, in the form of sample statistics and their standard
 errors, from one space to another using a given transform function.
 
 TODO:
-* Implement transform_delta2
-* Implement transform_data
 * Add user-defined transform function
+* Add functions for confidence intervals
+* Add decorators for accepting floats or vectors
 
 """
 from typing import Tuple
@@ -107,7 +107,7 @@ def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
 
 
 def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
-                method: str) -> None:
+                 method: str) -> None:
     """Run checks on input data.
 
     Parameters
