@@ -62,7 +62,7 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    check_input(mu, sigma, transform, method)
+    _check_input(mu, sigma, transform, method)
     if method == 'delta':
         return delta_method(mu, sigma, transform)
 
@@ -100,13 +100,13 @@ def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    check_input(mu, sigma, transform, 'delta')
+    _check_input(mu, sigma, transform, 'delta')
     mu_trans = TRANSFORM_DICT[transform][0](mu)
     sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)
     return mu_trans, sigma_trans
 
 
-def check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
+def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
                 method: str) -> None:
     """Run checks on input data.
 
@@ -122,13 +122,13 @@ def check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Method used to transform data.
 
     """
-    check_lengths_match(mu, sigma)
-    check_sigma_positive(sigma)
-    check_transform_valid(transform)
-    check_method_valid(method)
+    _check_lengths_match(mu, sigma)
+    _check_sigma_positive(sigma)
+    _check_transform_valid(transform)
+    _check_method_valid(method)
 
 
-def check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
+def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
     """Check that `mu` and `sigma` have the same lengths.
 
     Parameters
@@ -143,7 +143,7 @@ def check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
         raise ValueError("Lengths of mu and sigma don't match.")
 
 
-def check_sigma_positive(sigma: npt.ArrayLike) -> None:
+def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
     """Check that `sigma` is positive.
 
     Parameters
@@ -156,7 +156,7 @@ def check_sigma_positive(sigma: npt.ArrayLike) -> None:
         raise ValueError("Sigma values must be positive.")
 
 
-def check_transform_valid(transform: str) -> None:
+def _check_transform_valid(transform: str) -> None:
     """Check that `transform` is in TRANSFORM_DICT.
 
     Parameters
@@ -169,7 +169,7 @@ def check_transform_valid(transform: str) -> None:
         raise ValueError(f"Invalid transform '{transform}'.")
 
 
-def check_method_valid(method: str) -> None:
+def _check_method_valid(method: str) -> None:
     """Check that `method` is in ['delta', 'delta2'].
 
     Parameters
