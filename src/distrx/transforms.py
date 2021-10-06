@@ -19,16 +19,16 @@ import numpy.typing as npt
 TRANSFORM_DICT = {
     'log': [
         np.log,
-        lambda x: 1/x
+        lambda x: 1.0/x
     ], 'logit': [
-        lambda x: np.log(x/(1 - x)),
-        lambda x: 1/(x*(1 - x))
+        lambda x: np.log(x/(1.0 - x)),
+        lambda x: 1.0/(x*(1.0 - x))
     ], 'exp': [
         np.exp,
         np.exp
     ], 'expit': [
-        lambda x: 1/(1 + np.exp(-x)),
-        lambda x: np.exp(-x)/(1 + np.exp(-x))**2
+        lambda x: 1.0/(1.0 + np.exp(-x)),
+        lambda x: np.exp(-x)/(1.0 + np.exp(-x))**2
     ]
 }
 METHOD_LIST = ['delta']
@@ -62,8 +62,6 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors in the transform space.
 
     """
-    mu, sigma = np.array(mu), np.array(sigma)
-    _check_input(mu, sigma, transform, method)
     if method == 'delta':
         return delta_method(mu, sigma, transform)
 
@@ -153,9 +151,9 @@ def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
         Standard errors.
 
     """
-    if np.any(sigma == 0):
+    if np.any(sigma == 0.0):
         warnings.warn("Sigma vector contains zeros.")
-    if np.any(sigma < 0):
+    if np.any(sigma < 0.0):
         raise ValueError("Sigma values must be positive.")
 
 
