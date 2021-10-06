@@ -62,6 +62,7 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors in the transform space.
 
     """
+    _check_method_valid(method)
     if method == 'delta':
         return delta_method(mu, sigma, transform)
 
@@ -99,14 +100,26 @@ def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    _check_input(mu, sigma, transform, 'delta')
+    _check_input(mu, sigma, transform)
     mu_trans = TRANSFORM_DICT[transform][0](mu)
     sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)
     return mu_trans, sigma_trans
 
 
-def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
-                 method: str) -> None:
+def _check_method_valid(method: str) -> None:
+    """Check that `method` is in METHOD_LIST.
+
+    Parameters
+    ----------
+    method : {'delta'}
+        Method used to transform data.
+
+    """
+    if method not in METHOD_LIST:
+        raise ValueError(f"Invalid method '{method}'.")
+
+
+def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> None:
     """Run checks on input data.
 
     Parameters
@@ -117,14 +130,11 @@ def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors.
     transform : {'log', 'logit', 'exp', 'expit'}
         Transform function.
-    method : {'delta'}
-        Method used to transform data.
 
     """
     _check_lengths_match(mu, sigma)
     _check_sigma_positive(sigma)
     _check_transform_valid(transform)
-    _check_method_valid(method)
 
 
 def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
@@ -168,16 +178,3 @@ def _check_transform_valid(transform: str) -> None:
     """
     if transform not in TRANSFORM_DICT:
         raise ValueError(f"Invalid transform '{transform}'.")
-
-
-def _check_method_valid(method: str) -> None:
-    """Check that `method` is in ['delta', 'delta2'].
-
-    Parameters
-    ----------
-    method : {'delta', 'delta2'}
-        Method used to transform data.
-
-    """
-    if method not in METHOD_LIST:
-        raise ValueError(f"Invalid method '{method}'.")
