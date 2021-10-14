@@ -18,29 +18,29 @@ def test_method_name_valid(transform):
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
-def test_input_len_match(function):
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_input_len_match(function, transform):
     """Raise ValueError if lengths of input vectors don't match."""
-    for transform in TRANSFORM_LIST:
-        with pytest.raises(ValueError):
-            function(VALS, VALS*2, transform)
+    with pytest.raises(ValueError):
+        function(VALS, VALS*2, transform)
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
-def test_sigma_negative(function):
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_sigma_negative(function, transform):
     """Raise ValueError if `sigma` contains negative values."""
     vals = VALS + [-0.1]
-    for transform in TRANSFORM_LIST:
-        with pytest.raises(ValueError):
-            function(vals, vals, transform)
+    with pytest.raises(ValueError):
+        function(vals, vals, transform)
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
-def test_sigma_zero(function):
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_sigma_zero(function, transform):
     """Display warning if `sigma` contains zeros."""
     vals = VALS + [0.0]
-    for transform in TRANSFORM_LIST:
-        with pytest.warns(UserWarning):
-            function(vals, vals, transform)
+    with pytest.warns(UserWarning):
+        function(vals, vals, transform)
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
@@ -51,17 +51,17 @@ def test_transform_name_valid(function):
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
-def test_output_type(function):
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_output_type(function, transform):
     """Output should be numpy arrays."""
-    for transform in TRANSFORM_LIST:
-        mu, sigma = function(VALS, VALS, transform)
-        assert isinstance(mu, np.ndarray)
-        assert isinstance(sigma, np.ndarray)
+    mu, sigma = function(VALS, VALS, transform)
+    assert isinstance(mu, np.ndarray)
+    assert isinstance(sigma, np.ndarray)
 
 
 @pytest.mark.parametrize('function', FUNCTION_LIST)
-def test_outout_len_match(function):
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_outout_len_match(function, transform):
     """Length of output vectors should match."""
-    for transform in TRANSFORM_LIST:
-        mu, sigma = function(VALS, VALS, transform)
-        assert len(mu) == len(sigma)
+    mu, sigma = function(VALS, VALS, transform)
+    assert len(mu) == len(sigma)
