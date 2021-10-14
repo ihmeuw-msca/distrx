@@ -62,7 +62,8 @@ def transform_data(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str,
         Standard errors in the transform space.
 
     """
-    _check_method_valid(method)
+    mu, sigma = np.array(mu), np.array(sigma)
+    _check_input(method, transform, mu, sigma)
     if method == 'delta':
         return delta_method(mu, sigma, transform)
 
@@ -100,10 +101,32 @@ def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
 
     """
     mu, sigma = np.array(mu), np.array(sigma)
-    _check_input(mu, sigma, transform)
+    _check_input('delta', transform, mu, sigma)
     mu_trans = TRANSFORM_DICT[transform][0](mu)
     sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)
     return mu_trans, sigma_trans
+
+
+def _check_input(method: str, transform: str, mu: npt.ArrayLike,
+                 sigma: npt.ArrayLike) -> None:
+    """Run checks on input data.
+
+    Parameters
+    ----------
+    method : {'delta'}
+        Method used to transform data.
+    transform : {'log', 'logit', 'exp', 'expit'}
+        Transform function.
+    mu : array_like
+        Sample statistics.
+    sigma : array_like
+        Standard errors.
+
+    """
+    _check_method_valid(method)
+    _check_transform_valid(transform)
+    _check_lengths_match(mu, sigma)
+    _check_sigma_positive(sigma)
 
 
 def _check_method_valid(method: str) -> None:
@@ -119,22 +142,17 @@ def _check_method_valid(method: str) -> None:
         raise ValueError(f"Invalid method '{method}'.")
 
 
-def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> None:
-    """Run checks on input data.
+def _check_transform_valid(transform: str) -> None:
+    """Check that `transform` is in TRANSFORM_DICT.
 
     Parameters
     ----------
-    mu : array_like
-        Sample statistics.
-    sigma : array_like
-        Standard errors.
     transform : {'log', 'logit', 'exp', 'expit'}
         Transform function.
 
     """
-    _check_lengths_match(mu, sigma)
-    _check_sigma_positive(sigma)
-    _check_transform_valid(transform)
+    if transform not in TRANSFORM_DICT:
+        raise ValueError(f"Invalid transform '{transform}'.")
 
 
 def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
@@ -165,16 +183,3 @@ def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
         warnings.warn("Sigma vector contains zeros.")
     if np.any(sigma < 0.0):
         raise ValueError("Sigma values must be positive.")
-
-
-def _check_transform_valid(transform: str) -> None:
-    """Check that `transform` is in TRANSFORM_DICT.
-
-    Parameters
-    ----------
-    transform : {'log', 'logit', 'exp', 'expit'}
-        Transform function.
-
-    """
-    if transform not in TRANSFORM_DICT:
-        raise ValueError(f"Invalid transform '{transform}'.")
