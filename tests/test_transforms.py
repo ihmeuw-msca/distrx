@@ -5,7 +5,22 @@ import pytest
 from distrx.transforms import transform_data, delta_method
 
 
-TRANSFORM_LIST = ['log', 'logit', 'exp', 'expit']
+TRANSFORM_DICT = {
+    'log': [
+        np.log,
+        lambda x: 1.0/x
+    ], 'logit': [
+        lambda x: np.log(x/(1.0 - x)),
+        lambda x: 1.0/(x*(1.0 - x))
+    ], 'exp': [
+        np.exp,
+        np.exp
+    ], 'expit': [
+        lambda x: 1.0/(1.0 + np.exp(-x)),
+        lambda x: np.exp(-x)/(1.0 + np.exp(-x))**2
+    ]
+}
+TRANSFORM_LIST = list(TRANSFORM_DICT.keys())
 FUNCTION_LIST = [transform_data, delta_method]
 VALS = [0.1]*2
 
@@ -65,3 +80,15 @@ def test_outout_len_match(function, transform):
     """Length of output vectors should match."""
     mu, sigma = function(VALS, VALS, transform)
     assert len(mu) == len(sigma)
+
+
+@pytest.mark.parametrize('transform', TRANSFORM_LIST)
+def test_delta_result(transform):
+    """Check expected results."""
+    mu = np.random.uniform(0.1, 1.0, size=10)
+    sigma = np.random.uniform(0.1, 1.0, size=10)
+    mu_ref = TRANSFORM_DICT[transform][0](mu)
+    sigma_ref = sigma*TRANSFORM_DICT[transform][1](mu)
+    mu_trans, sigma_trans = delta_method(mu, sigma, transform)
+    assert np.allclose(mu_trans, mu_ref)
+    assert np.allclose(sigma_trans, sigma_ref)
