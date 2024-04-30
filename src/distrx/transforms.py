@@ -19,8 +19,8 @@ import numpy.typing as npt
 class FirstOrder:
     def __init__(self, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
         # self.transforms = ["log", "logit", "exp", "expit"]
-        self.transform = input(transform)
-        match self.transform:
+        transform = input(transform)
+        match transform:
             case "log":
                 self.mu_trans, self.sigma_trans = self.log_trans(mu, sigma)
             case "logit":
