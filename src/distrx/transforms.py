@@ -16,21 +16,41 @@ import numpy as np
 import numpy.typing as npt
 
 
-TRANSFORM_DICT = {
-    'log': [
-        np.log,
-        lambda x: 1.0/x
-    ], 'logit': [
-        lambda x: np.log(x/(1.0 - x)),
-        lambda x: 1.0/(x*(1.0 - x))
-    ], 'exp': [
-        np.exp,
-        np.exp
-    ], 'expit': [
-        lambda x: 1.0/(1.0 + np.exp(-x)),
-        lambda x: np.exp(-x)/(1.0 + np.exp(-x))**2
-    ]
-}
+class FirstOrder:
+    def __init__(self, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
+        # self.transforms = ["log", "logit", "exp", "expit"]
+        self.transform = input(transform)
+        match self.transform:
+            case "log":
+                self.mu_trans, self.sigma_trans = self.log_trans(mu, sigma)
+            case "logit":
+                self.mu_trans, self.sigma_trans = self.logit_trans(mu, sigma)
+            case "exp":
+                self.mu_trans, self.sigma_trans = self.exp_trans(mu, sigma)
+            case "expit":
+                self.mu_trans, self.sigma_trans = self.expit_trans(mu, sigma)
+            case _:
+                raise ValueError(f"Invalid transform '{transform}'.")
+
+    def log_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+        return np.log(mu), sigma / mu
+
+    def logit_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+        return np.log(mu / (1.0 - mu)), sigma / (mu * (1.0 - mu))
+
+    def exp_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+        return np.exp(mu), np.exp(mu)
+
+    def expit_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+        return 1.0 / (1.0 + np.exp(-mu)), sigma * np.exp(-mu) / (1.0 + np.exp(-mu)) ** 2
+
+    def get_mu_trans(self):
+        return self.mu_trans
+
+    def get_sigma_trans(self):
+        return self.sigma_trans
+
+
 METHOD_LIST = ['delta']
 
 
@@ -102,9 +122,8 @@ def delta_method(mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str) -> \
     """
     mu, sigma = np.array(mu), np.array(sigma)
     _check_input('delta', transform, mu, sigma)
-    mu_trans = TRANSFORM_DICT[transform][0](mu)
-    sigma_trans = sigma*TRANSFORM_DICT[transform][1](mu)
-    return mu_trans, sigma_trans
+    transformer = FirstOrder(transform, mu, sigma)
+    return transformer.get_mu_trans(), transformer.get_sigma_trans()
 
 
 def _check_input(method: str, transform: str, mu: npt.ArrayLike,
@@ -124,7 +143,6 @@ def _check_input(method: str, transform: str, mu: npt.ArrayLike,
 
     """
     _check_method_valid(method)
-    _check_transform_valid(transform)
     _check_lengths_match(mu, sigma)
     _check_sigma_positive(sigma)
 
@@ -140,19 +158,6 @@ def _check_method_valid(method: str) -> None:
     """
     if method not in METHOD_LIST:
         raise ValueError(f"Invalid method '{method}'.")
-
-
-def _check_transform_valid(transform: str) -> None:
-    """Check that `transform` is in TRANSFORM_DICT.
-
-    Parameters
-    ----------
-    transform : {'log', 'logit', 'exp', 'expit'}
-        Transform function.
-
-    """
-    if transform not in TRANSFORM_DICT:
-        raise ValueError(f"Invalid transform '{transform}'.")
 
 
 def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
