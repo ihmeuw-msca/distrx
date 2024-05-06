@@ -18,30 +18,35 @@ import numpy.typing as npt
 
 class FirstOrder:
     def __init__(self, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
-        # self.transforms = ["log", "logit", "exp", "expit"]
-        transform = input(transform)
-        match transform:
+        # you may be able to make transform a field, though it might not be necessary
+        # TODO: DSLETE DS.STORE
+        # TODO: USE RUFF LINTER
+        # TODO: put each parameter on its separate line if theres a lot (reference pypkg style guide)
+        self.transform = input(transform)
+        self.mu = mu
+        self.sigma = sigma
+        match self.transform:
             case "log":
-                self.mu_trans, self.sigma_trans = self.log_trans(mu, sigma)
+                self.mu_trans, self.sigma_trans = self.log_trans(self.mu, self.sigma)
             case "logit":
-                self.mu_trans, self.sigma_trans = self.logit_trans(mu, sigma)
+                self.mu_trans, self.sigma_trans = self.logit_trans(self.mu, self.sigma)
             case "exp":
-                self.mu_trans, self.sigma_trans = self.exp_trans(mu, sigma)
+                self.mu_trans, self.sigma_trans = self.exp_trans(self.mu, self.sigma)
             case "expit":
-                self.mu_trans, self.sigma_trans = self.expit_trans(mu, sigma)
+                self.mu_trans, self.sigma_trans = self.expit_trans(self.mu, self.sigma)
             case _:
-                raise ValueError(f"Invalid transform '{transform}'.")
+                raise ValueError(f"Invalid transform '{self.transform}'.")
 
-    def log_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+    def log_trans(self, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
         return np.log(mu), sigma / mu
 
-    def logit_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+    def logit_trans(self, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
         return np.log(mu / (1.0 - mu)), sigma / (mu * (1.0 - mu))
 
-    def exp_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+    def exp_trans(self, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
         return np.exp(mu), np.exp(mu)
 
-    def expit_trans(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+    def expit_trans(self, mu: npt.ArrayLike, sigma: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
         return 1.0 / (1.0 + np.exp(-mu)), sigma * np.exp(-mu) / (1.0 + np.exp(-mu)) ** 2
 
     def get_mu_trans(self):
