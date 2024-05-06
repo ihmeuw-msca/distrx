@@ -20,7 +20,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "numpy", "typing", "warnings"]
+test = ["pytest", "pytest-cov", "warnings]
 docs = ["sphinx", "sphinx-autodoc-typehints", "furo"]
 
 [project.urls]
