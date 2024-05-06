@@ -7,7 +7,7 @@ name = "distrx"
 version = "0.1.0"
 description = "Python package template"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "BSD-2-Clause" }
 authors = [
     { name = "IHME Math Sciences", email = "ihme.math.sciences@gmail.com" },
@@ -17,7 +17,7 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
 ]
-dependencies = ["typing", "numpy", "warnings"]
+dependencies = ["typing", "numpy"]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov"]
