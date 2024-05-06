@@ -24,4 +24,4 @@ test = ["pytest", "pytest-cov", "numpy", "typing", "warnings"]
 docs = ["sphinx", "sphinx-autodoc-typehints", "furo"]
 
 [project.urls]
-github = "https://github.com/ihmeuw-msca/pypkg"
+github = "https://github.com/ihmeuw-msca/distrx"
