@@ -17,10 +17,10 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
 ]
-dependencies = []
+dependencies = ["typing", "numpy", "warnings"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "warnings"]
+test = ["pytest", "pytest-cov"]
 docs = ["sphinx", "sphinx-autodoc-typehints", "furo"]
 
 [project.urls]
