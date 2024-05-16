@@ -18,15 +18,33 @@ import numpy.typing as npt
 
 
 class FirstOrder:
+    """
+    Contains 4 most common 1st order delta method transformation functions
+    """
+
     def __init__(
         self, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike
     ) -> None:
-        # you may be able to make transform a field, though it might not be necessary
-        # TODO: put each parameter on its separate line if theres a lot (reference pypkg style guide)
+        """Initializes an object to perform 1st order delta method transformations
+
+        Parameters
+        ----------
+        transform : str
+            Function of choice
+        mu : npt.ArrayLike
+            Summary statistics
+        sigma : npt.ArrayLike
+            Standard errors
+
+        Raises
+        ------
+        ValueError
+            Is thrown function of choice not implemented
+        """
         self.transform = transform
         self.mu = mu
         self.sigma = sigma
-        match self.transform:
+        match transform:
             case "log":
                 self.mu_trans, self.sigma_trans = self.log_trans(
                     self.mu, self.sigma
@@ -49,29 +67,99 @@ class FirstOrder:
     def log_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Performs delta method on data under log transform
+
+        Parameters
+        ----------
+        mu : npt.ArrayLike
+            Sample statistics
+        sigma : npt.ArrayLike
+            Standard errors
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Transformed mean and standard error
+        """
         return np.log(mu), sigma / mu
 
     def logit_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Performs delta method on data under logit transform
+
+        Parameters
+        ----------
+        mu : npt.ArrayLike
+            Sample statistics
+        sigma : npt.ArrayLike
+            Standard errors
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Transformed mean and standard error
+        """
         return np.log(mu / (1.0 - mu)), sigma / (mu * (1.0 - mu))
 
     def exp_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Performs delta method on data under exponential transform
+
+        Parameters
+        ----------
+        mu : npt.ArrayLike
+            Sample statistics
+        sigma : npt.ArrayLike
+            Standard errors
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Transformed mean and standard error
+        """
         return np.exp(mu), sigma * np.exp(mu)
 
     def expit_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Performs delta method on data under expit transform
+
+        Parameters
+        ----------
+        mu : npt.ArrayLike
+            Sample statistics
+        sigma : npt.ArrayLike
+            Standard errors
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Transformed mean and standard error
+        """
         return 1.0 / (1.0 + np.exp(-mu)), sigma * np.exp(-mu) / (
             1.0 + np.exp(-mu)
         ) ** 2
 
-    def get_mu_trans(self):
+    def get_mu_trans(self) -> np.ndarray:
+        """Getter for transformed mean
+
+        Returns
+        -------
+        np.ndarray
+            Transformed mean
+        """
         return self.mu_trans
 
-    def get_sigma_trans(self):
+    def get_sigma_trans(self) -> np.ndarray:
+        """Getter for transformed standard error
+
+        Returns
+        -------
+        np.ndarray
+            Transformed standard error
+        """
         return self.sigma_trans
 
 
@@ -153,6 +241,43 @@ def delta_method(
     _check_input("delta", transform, mu, sigma)
     transformer = FirstOrder(transform, mu, sigma)
     return transformer.get_mu_trans(), transformer.get_sigma_trans()
+
+
+def transform_percentage_change(mu_x, mu_y, sigma_x, sigma_y, sigma_xy, n):
+    """Bias-corrected percentage change w/delta transform standard error
+
+    Parameters
+    ----------
+    mu_x : array_like
+        Sample statistics
+    mu_y : array_like
+        Sample statistics
+    sigma_x : array_like
+        Standard errors
+    sigma_y : array_like
+        Standard errors
+    sigma_xy : array_like
+        Covariance
+    n : array_like
+        Sample sizes
+
+    Returns
+    -------
+    p_hat: numpy.ndarray # TODO: ENSURE THIS IS NUMPY ARRAY
+        bias corrected estimator of percentage change
+    sigma_trans: numpy.ndarray # TODO: ENSURE THIS IS NUMPY ARRAY
+        delta method estimator of standard error
+    """
+    delta_hat = (mu_y - mu_x) / mu_x
+    bias_corr = (mu_y * sigma_x**2 - sigma_xy) / ((n * mu_x) ** 2)
+    # may need sqrt
+    sigma_trans = (
+        (sigma_y**2 / mu_x**2)
+        - (2 * mu_y * sigma_xy / (mu_x**3))
+        + (mu_y**2 * sigma_xy**2 / (mu_x**4))
+    )
+    p_hat = delta_hat + bias_corr
+    return p_hat, sigma_trans
 
 
 def _check_input(
