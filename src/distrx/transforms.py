@@ -268,16 +268,32 @@ def transform_percentage_change(mu_x, mu_y, sigma_x, sigma_y, sigma_xy, n):
     sigma_trans: numpy.ndarray # TODO: ENSURE THIS IS NUMPY ARRAY
         delta method estimator of standard error
     """
+    # TODO: IT MAY BE POSSIBLE TO BACKCALCULATE SAMPLE SIZE FROM STD ERROR
+    # TODO: CONSIDER BINOMIAL DISTRIBUTION
     delta_hat = (mu_y - mu_x) / mu_x
     bias_corr = (mu_y * sigma_x**2 - sigma_xy) / ((n * mu_x) ** 2)
-    # may need sqrt
     sigma_trans = (
         (sigma_y**2 / mu_x**2)
         - (2 * mu_y * sigma_xy / (mu_x**3))
-        + (mu_y**2 * sigma_xy**2 / (mu_x**4))
+        + (mu_y**2 * sigma_x**2 / (mu_x**4))
     )
     p_hat = delta_hat + bias_corr
-    return p_hat, sigma_trans
+    return p_hat, np.sqrt(sigma_trans)
+
+
+def transform_percentage_change_binom(c_x, n_x, c_y, n_y):
+    mu_x = c_x / n_x
+    mu_y = c_y / n_y
+    sigma_x = mu_x * (1 - mu_x)
+    sigma_y = mu_y * (1 - mu_y)
+    # source for sigma_xy: https://stats.stackexchange.com/a/417367
+    sigma_xy = np.min([mu_x, mu_y])
+    sigma_trans = (
+        (sigma_y**2 / mu_x**2)
+        - (2 * mu_y * sigma_xy / (mu_x**3))
+        + (mu_y**2 * sigma_x**2 / (mu_x**4))
+    )
+    return sigma_trans
 
 
 def _check_input(
