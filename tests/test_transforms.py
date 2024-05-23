@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
-from distrx.transforms import delta_method, transform_data
+from distrx.transforms import (
+    delta_method,
+    transform_data,
+    transform_percentage_change,
+    transform_percentage_change_counts,
+)
 
 TRANSFORM_DICT = {
     "log": [np.log, lambda x: 1.0 / x],
@@ -86,3 +91,23 @@ def test_delta_result(transform):
     mu_trans, sigma_trans = delta_method(mu, sigma, transform)
     assert np.allclose(mu_trans, mu_ref)
     assert np.allclose(sigma_trans, sigma_ref)
+
+
+def test_percentage_change():
+    x = np.random.normal(1, 0.1, 1000)
+    y = np.random.normal(1.1, 0.1, 1000)
+    z = np.random.normal(1, 0.1, 1001)
+    p, sigma = transform_percentage_change(x, y)
+    assert 0 < p and p < 1
+    assert 0 < sigma and sigma < 1
+    with pytest.raises(ValueError):
+        transform_percentage_change(x, z)
+
+
+def test_percentage_change_counts():
+    x = np.random.choice([0, 1], size=1000, p=[0.1, 0.9])
+    y = np.random.choice([0, 1], size=1100, p=[0.2, 0.8])
+    sigma = transform_percentage_change_counts(
+        (x == 1).sum(), len(x), (y == 1).sum(), len(y)
+    )
+    assert 0 < sigma and sigma < 1

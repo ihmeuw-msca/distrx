@@ -5,18 +5,18 @@ User guide
    :hidden:
    :numbered:
 
-   project_organization
-   style_guide
-   testing
-   documentation
-   cicd
+   simple_transformations
+   percentage_change
 
 .. note::
 
-   Please provide some intructions of how to read the user guide here.
-   For example where should a user start and what order of reading should one follow.
+   Follow the titles in the sidebar for more information on the general type of transformation you
+   are performing on your data to use this user guide
 
 
-This user guide introduces and explains some key concepts when building a Python package.
-If you are a new user starting out your Python package journey, we recommend you to start with the
-:ref:`Project organization` and read each section in order.
+This user guide introduces and explains some key concepts behind transforming data. A common pitfall
+modelers fall into is to simply apply the transformation they are using for their data (e.g. log) to
+their standard errors as well. However, due to the nature of standard error calculation, this
+will provide completely incorrect standard errors. In order to compute the standard error of data
+after functions have been applied, or when functions of multiple variables are involved, more
+complex transformation methods such as those based on the delta method are required.

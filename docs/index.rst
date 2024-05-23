@@ -9,11 +9,6 @@ distrx documentation
    api_reference/index
    developer_guide/index
 
-.. note::
-
-   In this page, please use one or two paragraphs to summarize the main purpose of the package.
-   Following the summary, please provide guidence of how people should use this documentation.
-
 Statistics like variance and SE (standard error) are a measure of spread in data.
 When shifting all of your data up or down (i.e. adding and subtracting a constant from your data),
 you need not worry about tinkering with the variance or SE calculations.

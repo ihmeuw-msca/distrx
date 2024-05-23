@@ -243,56 +243,81 @@ def delta_method(
     return transformer.get_mu_trans(), transformer.get_sigma_trans()
 
 
-def transform_percentage_change(mu_x, mu_y, sigma_x, sigma_y, sigma_xy, n):
-    """Bias-corrected percentage change w/delta transform standard error
+def transform_percentage_change(
+    x_vec: npt.ArrayLike, y_vec: npt.ArrayLike
+) -> Tuple[float, float]:
+    """bias corrected percentage change with transformed standard error
 
     Parameters
     ----------
-    mu_x : array_like
-        Sample statistics
-    mu_y : array_like
-        Sample statistics
-    sigma_x : array_like
-        Standard errors
-    sigma_y : array_like
-        Standard errors
-    sigma_xy : array_like
-        Covariance
-    n : array_like
-        Sample sizes
+    x_vec : array_like
+        observations from first sample
+    y_vec : array_like
+        observations from second sample
 
     Returns
     -------
-    p_hat: numpy.ndarray # TODO: ENSURE THIS IS NUMPY ARRAY
-        bias corrected estimator of percentage change
-    sigma_trans: numpy.ndarray # TODO: ENSURE THIS IS NUMPY ARRAY
-        delta method estimator of standard error
+    p_hat : float
+        bias corrected percentage change
+    sigma_trans : float
+        standard error in the transformed space
+
+    Raises
+    ------
+    ValueError
+        covariance is not possible to calculate when x and y are different lengths
     """
-    # TODO: IT MAY BE POSSIBLE TO BACKCALCULATE SAMPLE SIZE FROM STD ERROR
-    # TODO: CONSIDER BINOMIAL DISTRIBUTION
+    if len(x_vec) != len(y_vec):
+        raise ValueError("x_vec must be the same length as y_vec")
+    mu_x = np.mean(x_vec)
+    mu_y = np.mean(y_vec)
+    n = len(x_vec)
+    cov = np.cov(x_vec, y_vec)
+    sigma2_x = cov[0, 0]
+    sigma2_y = cov[1, 1]
+    sigma_xy = cov[0, 1]
+
     delta_hat = (mu_y - mu_x) / mu_x
-    bias_corr = (mu_y * sigma_x**2 - sigma_xy) / ((n * mu_x) ** 2)
-    sigma_trans = (
-        (sigma_y**2 / mu_x**2)
-        - (2 * mu_y * sigma_xy / (mu_x**3))
-        + (mu_y**2 * sigma_x**2 / (mu_x**4))
-    )
+    bias_corr = (mu_y * sigma2_x) / ((n * mu_x) ** 2)
     p_hat = delta_hat + bias_corr
+
+    sigma_trans = (
+        (sigma2_y / mu_x**2)
+        - (2 * mu_y * sigma_xy / (mu_x**3))
+        + (mu_y**2 * sigma2_x / (mu_x**4))
+    )
+
     return p_hat, np.sqrt(sigma_trans)
 
 
-def transform_percentage_change_binom(c_x, n_x, c_y, n_y):
+def transform_percentage_change_counts(
+    c_x: int, n_x: int, c_y: int, n_y: int
+) -> float:
+    """alternative percentage change transformation with only counts provided
+
+    Parameters
+    ----------
+    c_x : int
+        raw count in one sample (e.g. of incidence)
+    n_x : int
+        sample size
+    c_y : int
+        raw count in second sample (e.g. of incidence)
+    n_y : int
+        sample size
+
+    Returns
+    -------
+    sigma_trans: array_like
+        standard errors in the transform space
+    """
     mu_x = c_x / n_x
     mu_y = c_y / n_y
-    sigma_x = mu_x * (1 - mu_x)
-    sigma_y = mu_y * (1 - mu_y)
-    # source for sigma_xy: https://stats.stackexchange.com/a/417367
-    sigma_xy = np.min([mu_x, mu_y])
-    sigma_trans = (
-        (sigma_y**2 / mu_x**2)
-        - (2 * mu_y * sigma_xy / (mu_x**3))
-        + (mu_y**2 * sigma_x**2 / (mu_x**4))
-    )
+    sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
+    sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_x - c_y) * mu_y**2) / (n_y - 1)
+
+    sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
+
     return sigma_trans
 
 
