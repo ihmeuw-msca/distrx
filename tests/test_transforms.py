@@ -1,3 +1,4 @@
+# TODO: CHANGE TESTS TO INCORPORATE POINT ESTIMATE
 """Tests for transforms.py module."""
 
 import numpy as np
@@ -7,7 +8,7 @@ from distrx.transforms import (
     delta_method,
     transform_data,
     transform_percentage_change,
-    transform_percentage_change_counts,
+    transform_percentage_change_counts2,
 )
 
 TRANSFORM_DICT = {
@@ -107,7 +108,8 @@ def test_percentage_change():
 def test_percentage_change_counts():
     x = np.random.choice([0, 1], size=1000, p=[0.1, 0.9])
     y = np.random.choice([0, 1], size=1100, p=[0.2, 0.8])
-    sigma = transform_percentage_change_counts(
+    mu, sigma = transform_percentage_change_counts2(
         (x == 1).sum(), len(x), (y == 1).sum(), len(y)
     )
+    assert -1 <= mu and mu < np.infty
     assert 0 < sigma and sigma < 1
