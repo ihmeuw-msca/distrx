@@ -1,4 +1,3 @@
-# TODO: CHANGE TESTS TO INCORPORATE POINT ESTIMATE
 """Tests for transforms.py module."""
 
 import numpy as np
