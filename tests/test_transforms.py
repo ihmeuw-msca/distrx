@@ -1,13 +1,14 @@
 """Tests for transforms.py module."""
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from distrx.transforms import (
     delta_method,
     transform_data,
     transform_percentage_change,
-    transform_percentage_change_counts2,
+    transform_percentage_change_counts1,
 )
 
 TRANSFORM_DICT = {
@@ -107,8 +108,31 @@ def test_percentage_change():
 def test_percentage_change_counts():
     x = np.random.choice([0, 1], size=1000, p=[0.1, 0.9])
     y = np.random.choice([0, 1], size=1100, p=[0.2, 0.8])
-    mu, sigma = transform_percentage_change_counts2(
+    mu, sigma = transform_percentage_change_counts1(
         (x == 1).sum(), len(x), (y == 1).sum(), len(y)
     )
-    assert -1 <= mu and mu < np.infty
+    assert -1 <= mu and mu < np.inf
     assert 0 < sigma and sigma < 1
+
+
+def test_percentage_change_input():
+    # scalar input
+    c_x, n_x = 100, 1000
+    c_y, n_y = 200, 1050
+    # with pytest.raises(TypeError):
+    transform_percentage_change_counts1(c_x, n_x, c_y, n_y)
+
+    # base list input
+    c_x = [100, 200]
+    n_x = [1000, 1000]
+    c_y = [300, 400]
+    n_y = [1050, 1050]
+    # with pytest.raises(TypeError):
+    transform_percentage_change_counts1(c_x, n_x, c_y, n_y)
+
+    # dataframe input
+    df = pd.DataFrame({"c_x": c_x, "n_x": n_x, "c_y": c_y, "n_y": n_y})
+    # with pytest.raises(TypeError):
+    transform_percentage_change_counts1(
+        df["c_x"], df["n_x"], df["c_y"], df["n_y"]
+    )

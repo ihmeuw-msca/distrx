@@ -15,6 +15,7 @@ from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
+from mrtool import MRBRT, LinearCovModel, MRData
 
 
 class FirstOrder:
@@ -291,8 +292,15 @@ def transform_percentage_change(
     return p_hat, np.sqrt(sigma_trans)
 
 
+def handle_input_pct(c_x, n_x, c_y, n_y):
+    return np.array([c_x]), np.array([n_x]), np.array([c_y]), np.array([n_y])
+
+
 def transform_percentage_change_counts1(
-    c_x: int, n_x: int, c_y: int, n_y: int
+    c_x: np.ndarray,
+    n_x: np.ndarray,
+    c_y: np.ndarray,
+    n_y: np.ndarray,
 ) -> float:
     """alternative percentage change transformation with only counts provided
 
@@ -312,18 +320,31 @@ def transform_percentage_change_counts1(
     sigma_trans: array_like
         standard errors in the transform space
     """
+    c_x, n_x, c_y, n_y = handle_input_pct(c_x, n_x, c_y, n_y)
+
     mu_x = c_x / n_x
     mu_y = c_y / n_y
-    # sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
-    # sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
-    sigma2_x = n_x * mu_x * (1 - mu_x)
-    sigma2_y = n_y * mu_y * (1 - mu_y)
+    # typical sample var calc
+    sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
+    sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
 
-    # sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
-    sigma_trans = (sigma2_y / c_x**2) + (c_y**2 * sigma2_x / (c_x**4))
-    print(sigma2_x, sigma2_y)
+    # var for p assuming binomial model
+    # sigma2_x = mu_x * (1 - mu_x) / n_x
+    # sigma2_y = mu_y * (1 - mu_y) / n_y
 
-    return ((c_y / c_x) - 1), np.sqrt(sigma_trans)
+    # var for p assuming beta prior
+    # sigma2_x = (
+    #     (mu_x * c_x + 1) * (c_x - mu_x * c_x + 1) / ((c_x + 2) ** 2 * (c_x + 3))
+    # )
+    # sigma2_y = (
+    #     (mu_y * c_y + 1) * (c_y - mu_y * c_y + 1) / ((c_y + 2) ** 2 * (c_y + 3))
+    # )
+
+    sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
+    # sigma_trans = (sigma2_y / c_x**2) + (c_y**2 * sigma2_x / (c_x**4))
+    # print(sigma2_x, sigma2_y)
+
+    return ((mu_y / mu_x) - 1), np.sqrt(sigma_trans)
 
 
 def transform_percentage_change_counts2(
@@ -349,14 +370,30 @@ def transform_percentage_change_counts2(
     """
     mu_x = c_x / n_x
     mu_y = c_y / n_y
-    sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
-    sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
-    # print("look", sigma2_x, sigma2_y)
+    rat = mu_y / (mu_x + mu_y)
+    Rl = np.log(rat / (1 - rat))
+    # variance of p assuming binomial model, somewhat reasonable coverage w/o scaling CI
+    sigma2_x = mu_x * (1 - mu_x) / n_x
+    sigma2_y = mu_y * (1 - mu_y) / n_y
 
-    sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
+    # standard sample var calculation, extreme overcoverage
+    # sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
+    # sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
+
+    # assumed beta prior sample var calculation, extreme overcoverage
+    # sigma2_x = (
+    #     (mu_x * c_x + 1) * (c_x - mu_x * c_x + 1) / ((c_x + 2) ** 2 * (c_x + 3))
+    # )
+    # sigma2_y = (
+    #     (mu_y * c_y + 1) * (c_y - mu_y * c_y + 1) / ((c_y + 2) ** 2 * (c_y + 3))
+    # )
+
+    # sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
     # sigma_trans = (sigma2_y / c_x**2) + (c_y**2 * sigma2_x / (c_x**4))
+    sigma2_Rl = (sigma2_x / (mu_x**2)) + (sigma2_y / (mu_y**2))
+    sigma_tx = sigma2_Rl * np.exp(2 * Rl)
 
-    return ((mu_y / mu_x) - 1), np.sqrt(sigma_trans)
+    return ((mu_y / mu_x) - 1), np.sqrt(sigma_tx)
 
 
 def _check_input(
