@@ -243,10 +243,10 @@ def delta_method(
     return transformer.get_mu_trans(), transformer.get_sigma_trans()
 
 
-def transform_percentage_change(
+def transform_percentage_change_experiment(
     x_vec: npt.ArrayLike, y_vec: npt.ArrayLike
 ) -> Tuple[float, float]:
-    """bias corrected percentage change with transformed standard error
+    """percentage change with transformed standard error
 
     Parameters
     ----------
@@ -278,7 +278,6 @@ def transform_percentage_change(
     sigma_xy = cov[0, 1]
 
     delta_hat = (mu_y - mu_x) / mu_x
-    # TODO: add option instead of doing this by default
     bias_corr = (mu_y * sigma2_x) / ((n * mu_x) ** 2)
     p_hat = delta_hat + bias_corr
 
@@ -295,104 +294,43 @@ def handle_input_pct(c_x, n_x, c_y, n_y):
     return np.array([c_x]), np.array([n_x]), np.array([c_y]), np.array([n_y])
 
 
-def transform_percentage_change_counts1(
-    c_x: np.ndarray,
-    n_x: np.ndarray,
-    c_y: np.ndarray,
-    n_y: np.ndarray,
+def transform_percentage_change(
+    c_x: npt.ArrayLike,
+    n_x: npt.ArrayLike,
+    c_y: npt.ArrayLike,
+    n_y: npt.ArrayLike,
 ) -> float:
-    """alternative percentage change transformation with only counts provided
+    """percentage change variance transformation for incidence data
 
     Parameters
     ----------
-    c_x : int
-        raw count in one sample (e.g. of incidence)
-    n_x : int
-        sample size
-    c_y : int
-        raw count in second sample (e.g. of incidence)
-    n_y : int
-        sample size
+    c_x : npt.ArrayLike
+        incidence counts in first sample
+    n_x : npt.ArrayLike
+        sample size(s) of first sample
+    c_y : npt.ArrayLike
+        incidence counts in second sample
+    n_y : npt.ArrayLike
+        sample size(s) of second sample
 
     Returns
     -------
-    sigma_trans: array_like
-        standard errors in the transform space
+    (delta_hat, sigma_tx)
+        sample percentage change of prevalence and corresponding transformed standard error
     """
     c_x, n_x, c_y, n_y = handle_input_pct(c_x, n_x, c_y, n_y)
 
     mu_x = c_x / n_x
     mu_y = c_y / n_y
-    # typical sample var calc
     sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
     sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
 
-    # var for p assuming binomial model
-    # sigma2_x = mu_x * (1 - mu_x) / n_x
-    # sigma2_y = mu_y * (1 - mu_y) / n_y
+    # ruff makes this really ugly for some reason
+    sigma2_tx = (sigma2_y / (n_y * mu_x**2)) + (
+        mu_y**2 * sigma2_x / (n_x * mu_x**4)
+    )
 
-    # var for p assuming beta prior
-    # sigma2_x = (
-    #     (mu_x * c_x + 1) * (c_x - mu_x * c_x + 1) / ((c_x + 2) ** 2 * (c_x + 3))
-    # )
-    # sigma2_y = (
-    #     (mu_y * c_y + 1) * (c_y - mu_y * c_y + 1) / ((c_y + 2) ** 2 * (c_y + 3))
-    # )
-
-    sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
-    # sigma_trans = (sigma2_y / c_x**2) + (c_y**2 * sigma2_x / (c_x**4))
-    # print(sigma2_x, sigma2_y)
-
-    return ((mu_y / mu_x) - 1), np.sqrt(sigma_trans)
-
-
-def transform_percentage_change_counts2(
-    c_x: int, n_x: int, c_y: int, n_y: int
-) -> float:
-    """alternative percentage change transformation with only counts provided
-
-    Parameters
-    ----------
-    c_x : int
-        raw count in one sample (e.g. of incidence)
-    n_x : int
-        sample size
-    c_y : int
-        raw count in second sample (e.g. of incidence)
-    n_y : int
-        sample size
-
-    Returns
-    -------
-    sigma_trans: array_like
-        standard errors in the transform space
-    """
-    mu_x = c_x / n_x
-    mu_y = c_y / n_y
-    rat = mu_y / (mu_x + mu_y)
-    Rl = np.log(rat / (1 - rat))
-    # variance of p assuming binomial model, somewhat reasonable coverage w/o scaling CI
-    sigma2_x = mu_x * (1 - mu_x) / n_x
-    sigma2_y = mu_y * (1 - mu_y) / n_y
-
-    # standard sample var calculation, extreme overcoverage
-    # sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
-    # sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
-
-    # assumed beta prior sample var calculation, extreme overcoverage
-    # sigma2_x = (
-    #     (mu_x * c_x + 1) * (c_x - mu_x * c_x + 1) / ((c_x + 2) ** 2 * (c_x + 3))
-    # )
-    # sigma2_y = (
-    #     (mu_y * c_y + 1) * (c_y - mu_y * c_y + 1) / ((c_y + 2) ** 2 * (c_y + 3))
-    # )
-
-    # sigma_trans = (sigma2_y / mu_x**2) + (mu_y**2 * sigma2_x / (mu_x**4))
-    # sigma_trans = (sigma2_y / c_x**2) + (c_y**2 * sigma2_x / (c_x**4))
-    sigma2_Rl = (sigma2_x / (mu_x**2)) + (sigma2_y / (mu_y**2))
-    sigma_tx = sigma2_Rl * np.exp(2 * Rl)
-
-    return ((mu_y / mu_x) - 1), np.sqrt(sigma_tx)
+    return ((mu_y / mu_x) - 1), np.sqrt(sigma2_tx)
 
 
 def _check_input(

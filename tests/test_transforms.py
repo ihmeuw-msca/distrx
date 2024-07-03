@@ -8,7 +8,7 @@ from distrx.transforms import (
     delta_method,
     transform_data,
     transform_percentage_change,
-    transform_percentage_change_counts1,
+    transform_percentage_change_experiment,
 )
 
 TRANSFORM_DICT = {
@@ -98,17 +98,17 @@ def test_percentage_change():
     x = np.random.normal(1, 0.1, 1000)
     y = np.random.normal(1.1, 0.1, 1000)
     z = np.random.normal(1, 0.1, 1001)
-    p, sigma = transform_percentage_change(x, y)
+    p, sigma = transform_percentage_change_experiment(x, y)
     assert 0 < p and p < 1
     assert 0 < sigma and sigma < 1
     with pytest.raises(ValueError):
-        transform_percentage_change(x, z)
+        transform_percentage_change_experiment(x, z)
 
 
 def test_percentage_change_counts():
     x = np.random.choice([0, 1], size=1000, p=[0.1, 0.9])
     y = np.random.choice([0, 1], size=1100, p=[0.2, 0.8])
-    mu, sigma = transform_percentage_change_counts1(
+    mu, sigma = transform_percentage_change(
         (x == 1).sum(), len(x), (y == 1).sum(), len(y)
     )
     assert -1 <= mu and mu < np.inf
@@ -120,7 +120,7 @@ def test_percentage_change_input():
     c_x, n_x = 100, 1000
     c_y, n_y = 200, 1050
     # with pytest.raises(TypeError):
-    transform_percentage_change_counts1(c_x, n_x, c_y, n_y)
+    transform_percentage_change(c_x, n_x, c_y, n_y)
 
     # base list input
     c_x = [100, 200]
@@ -128,11 +128,9 @@ def test_percentage_change_input():
     c_y = [300, 400]
     n_y = [1050, 1050]
     # with pytest.raises(TypeError):
-    transform_percentage_change_counts1(c_x, n_x, c_y, n_y)
+    transform_percentage_change(c_x, n_x, c_y, n_y)
 
     # dataframe input
     df = pd.DataFrame({"c_x": c_x, "n_x": n_x, "c_y": c_y, "n_y": n_y})
     # with pytest.raises(TypeError):
-    transform_percentage_change_counts1(
-        df["c_x"], df["n_x"], df["c_y"], df["n_y"]
-    )
+    transform_percentage_change(df["c_x"], df["n_x"], df["c_y"], df["n_y"])
