@@ -15,6 +15,7 @@ from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
+from msca.c2fun import c2fun_dict
 
 
 class FirstOrder:
@@ -22,19 +23,13 @@ class FirstOrder:
     Contains 4 most common 1st order delta method transformation functions
     """
 
-    def __init__(
-        self, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike
-    ) -> None:
+    def __init__(self, transform: str) -> None:
         """Initializes an object to perform 1st order delta method transformations
 
         Parameters
         ----------
         transform : str
             Function of choice
-        mu : npt.ArrayLike
-            Summary statistics
-        sigma : npt.ArrayLike
-            Standard errors
 
         Raises
         ------
@@ -42,25 +37,19 @@ class FirstOrder:
             Is thrown function of choice not implemented
         """
         self.transform = transform
-        self.mu = mu
-        self.sigma = sigma
-        match transform:
+
+    def __call__(
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        match self.transform:
             case "log":
-                self.mu_trans, self.sigma_trans = self.log_trans(
-                    self.mu, self.sigma
-                )
+                return self.log_trans(mu, sigma)
             case "logit":
-                self.mu_trans, self.sigma_trans = self.logit_trans(
-                    self.mu, self.sigma
-                )
+                return self.logit_trans(mu, sigma)
             case "exp":
-                self.mu_trans, self.sigma_trans = self.exp_trans(
-                    self.mu, self.sigma
-                )
+                return self.exp_trans(mu, sigma)
             case "expit":
-                self.mu_trans, self.sigma_trans = self.expit_trans(
-                    self.mu, self.sigma
-                )
+                return self.expit_trans(mu, sigma)
             case _:
                 raise ValueError(f"Invalid transform '{self.transform}'.")
 
@@ -81,7 +70,9 @@ class FirstOrder:
         Tuple[np.ndarray, np.ndarray]
             Transformed mean and standard error
         """
-        return np.log(mu), sigma / mu
+        log = c2fun_dict["log"]
+        # log(mu), sigma / mu
+        return log(mu), sigma * log(mu, order=1)
 
     def logit_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
@@ -100,7 +91,9 @@ class FirstOrder:
         Tuple[np.ndarray, np.ndarray]
             Transformed mean and standard error
         """
-        return np.log(mu / (1.0 - mu)), sigma / (mu * (1.0 - mu))
+        logit = c2fun_dict["logit"]
+        # log(mu / (1 - mu)), sigma / (mu * (1 - mu))
+        return logit(mu), sigma * logit(mu, order=1)
 
     def exp_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
@@ -119,7 +112,9 @@ class FirstOrder:
         Tuple[np.ndarray, np.ndarray]
             Transformed mean and standard error
         """
-        return np.exp(mu), sigma * np.exp(mu)
+        exp = c2fun_dict["exp"]
+        # exp(mu), sigma * exp(mu)
+        return exp(mu), sigma * exp(mu, order=1)
 
     def expit_trans(
         self, mu: npt.ArrayLike, sigma: npt.ArrayLike
@@ -138,29 +133,9 @@ class FirstOrder:
         Tuple[np.ndarray, np.ndarray]
             Transformed mean and standard error
         """
-        return 1.0 / (1.0 + np.exp(-mu)), sigma * np.exp(-mu) / (
-            1.0 + np.exp(-mu)
-        ) ** 2
-
-    def get_mu_trans(self) -> np.ndarray:
-        """Getter for transformed mean
-
-        Returns
-        -------
-        np.ndarray
-            Transformed mean
-        """
-        return self.mu_trans
-
-    def get_sigma_trans(self) -> np.ndarray:
-        """Getter for transformed standard error
-
-        Returns
-        -------
-        np.ndarray
-            Transformed standard error
-        """
-        return self.sigma_trans
+        expit = c2fun_dict["expit"]
+        # 1 / (1 + exp(-mu)), sigma * exp(x) / (1 + exp(x))^2
+        return expit(mu), sigma * expit(mu, order=1)
 
 
 METHOD_LIST = ["delta"]
@@ -239,8 +214,8 @@ def delta_method(
     """
     mu, sigma = np.array(mu), np.array(sigma)
     _check_input("delta", transform, mu, sigma)
-    transformer = FirstOrder(transform, mu, sigma)
-    return transformer.get_mu_trans(), transformer.get_sigma_trans()
+    transformer = FirstOrder(transform)
+    return transformer(mu, sigma)
 
 
 def transform_percentage_change_experiment(
@@ -269,17 +244,12 @@ def transform_percentage_change_experiment(
     """
     if len(x_vec) != len(y_vec):
         raise ValueError("x_vec must be the same length as y_vec")
-    mu_x = np.mean(x_vec)
-    mu_y = np.mean(y_vec)
-    n = len(x_vec)
+
+    mu_x, mu_y = np.mean(x_vec), np.mean(y_vec)
     cov = np.cov(x_vec, y_vec)
-    sigma2_x = cov[0, 0]
-    sigma2_y = cov[1, 1]
-    sigma_xy = cov[0, 1]
+    sigma2_x, sigma2_y, sigma_xy = cov[0, 0], cov[1, 1], cov[0, 1]
 
     delta_hat = (mu_y - mu_x) / mu_x
-    bias_corr = (mu_y * sigma2_x) / ((n * mu_x) ** 2)
-    p_hat = delta_hat + bias_corr
 
     sigma_trans = (
         (sigma2_y / mu_x**2)
@@ -287,10 +257,11 @@ def transform_percentage_change_experiment(
         + (mu_y**2 * sigma2_x / (mu_x**4))
     )
 
-    return p_hat, np.sqrt(sigma_trans)
+    return delta_hat, np.sqrt(sigma_trans)
 
 
 def handle_input_pct(c_x, n_x, c_y, n_y):
+    """helper function to convert to numpy arrays"""
     return np.array([c_x]), np.array([n_x]), np.array([c_y]), np.array([n_y])
 
 
@@ -299,7 +270,7 @@ def transform_percentage_change(
     n_x: npt.ArrayLike,
     c_y: npt.ArrayLike,
     n_y: npt.ArrayLike,
-) -> float:
+) -> Tuple[np.ndarray, np.ndarray]:
     """percentage change variance transformation for incidence data
 
     Parameters
