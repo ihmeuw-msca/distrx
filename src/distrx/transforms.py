@@ -192,7 +192,7 @@ class FirstOrderBivariate:
 
         .. math::
 
-            \frac{p_y}{p_x} - 1, \sigma * \exp(\mu)
+            \frac{p_y}{p_x} - 1, \sqrt{\frac{\sigma_y^2}{n_y\mu_x^2} + \frac{\mu_y^2\sigma_x^2}{n_x\mu_x^4}}
 
         Parameters
         ----------

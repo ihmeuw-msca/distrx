@@ -16,7 +16,7 @@ order Taylor expansion of the transformation function.
 Example: Log Transform
 ----------------------
 
-Assume that we have some means and standard errors (SEs) of systolic blood pressure (SBP) from
+Suppose that we have some means and standard errors (SEs) of systolic blood pressure (SBP) from
 several different samples. The data may look something like the following,
 
 .. csv-table::
