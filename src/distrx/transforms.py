@@ -17,6 +17,8 @@ import numpy as np
 import numpy.typing as npt
 from msca.c2fun import c2fun_dict
 
+METHOD_LIST = ["delta"]
+
 
 class FirstOrder:
     """
@@ -39,24 +41,28 @@ class FirstOrder:
         self.transform = transform
 
     def __call__(
-        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
         match self.transform:
             case "log":
-                return self.log_trans(mu, sigma)
+                return self.log_trans(mu, sigma, n)
             case "logit":
-                return self.logit_trans(mu, sigma)
+                return self.logit_trans(mu, sigma, n)
             case "exp":
-                return self.exp_trans(mu, sigma)
+                return self.exp_trans(mu, sigma, n)
             case "expit":
-                return self.expit_trans(mu, sigma)
+                return self.expit_trans(mu, sigma, n)
             case _:
                 raise ValueError(f"Invalid transform '{self.transform}'.")
 
     def log_trans(
-        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Performs delta method on data under log transform
+
+        .. math::
+
+            \log(mu), \frac{\sigma}{\mu} \cdot \frac{1}{\sqrt{n}}
 
         Parameters
         ----------
@@ -71,13 +77,16 @@ class FirstOrder:
             Transformed mean and standard error
         """
         log = c2fun_dict["log"]
-        # log(mu), sigma / mu
-        return log(mu), sigma * log(mu, order=1)
+        return log(mu), sigma * log(mu, order=1) / np.sqrt(n)
 
     def logit_trans(
-        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Performs delta method on data under logit transform
+
+        .. math::
+
+            \log(\frac{\mu}{1 - \mu}), \frac{\sigma}{\mu \cdot (1 - \mu)} \cdot \frac{1}{\sqrt{n}}
 
         Parameters
         ----------
@@ -92,13 +101,16 @@ class FirstOrder:
             Transformed mean and standard error
         """
         logit = c2fun_dict["logit"]
-        # log(mu / (1 - mu)), sigma / (mu * (1 - mu))
-        return logit(mu), sigma * logit(mu, order=1)
+        return logit(mu), sigma * logit(mu, order=1) / np.sqrt(n)
 
     def exp_trans(
-        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Performs delta method on data under exponential transform
+
+        .. math::
+
+            \exp(\mu), \sigma \cdot \exp(\mu) \cdot \frac{1}{\sqrt{n}}
 
         Parameters
         ----------
@@ -113,13 +125,16 @@ class FirstOrder:
             Transformed mean and standard error
         """
         exp = c2fun_dict["exp"]
-        # exp(mu), sigma * exp(mu)
-        return exp(mu), sigma * exp(mu, order=1)
+        return exp(mu), sigma * exp(mu, order=1) / np.sqrt(n)
 
     def expit_trans(
-        self, mu: npt.ArrayLike, sigma: npt.ArrayLike
+        self, mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Performs delta method on data under expit transform
+
+        .. math::
+
+            \frac{1}{1 + \exp(-\mu)}, \sigma \cdot \frac{\exp(\mu)}{(1 + \exp(\mu))^2} \cdot \frac{1}{\sqrt{n}}
 
         Parameters
         ----------
@@ -134,20 +149,88 @@ class FirstOrder:
             Transformed mean and standard error
         """
         expit = c2fun_dict["expit"]
-        # 1 / (1 + exp(-mu)), sigma * exp(x) / (1 + exp(x))^2
-        return expit(mu), sigma * expit(mu, order=1)
+        return expit(mu), sigma * expit(mu, order=1) / np.sqrt(n)
 
 
-METHOD_LIST = ["delta"]
+class FirstOrderBivariate:
+    def __init__(self, transform: str) -> None:
+        """Initializes an object to perform 1st order delta method transformations
+
+        Parameters
+        ----------
+        transform : str
+            Function of choice
+
+        Raises
+        ------
+        ValueError
+            Is thrown function of choice not implemented
+        """
+        self.transform = transform
+
+    def __call__(
+        self,
+        c_x: npt.ArrayLike,
+        n_x: npt.ArrayLike,
+        c_y: npt.ArrayLike,
+        n_y: npt.ArrayLike,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        match self.transform:
+            case "percentage_change":
+                return self.percentage_change_trans(c_x, n_x, c_y, n_y)
+            case _:
+                raise ValueError(f"Invalid transform '{self.transform}'.")
+
+    def percentage_change_trans(
+        self,
+        c_x: npt.ArrayLike,
+        n_x: npt.ArrayLike,
+        c_y: npt.ArrayLike,
+        n_y: npt.ArrayLike,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """percentage change variance transformation for incidence data
+
+        .. math::
+
+            \frac{p_y}{p_x} - 1, \sigma * \exp(\mu)
+
+        Parameters
+        ----------
+        c_x : npt.ArrayLike
+            incidence counts in first sample
+        n_x : npt.ArrayLike
+            sample sizes of first sample
+        c_y : npt.ArrayLike
+            incidence counts in second sample
+        n_y : npt.ArrayLike
+            sample sizes of second sample
+
+        Returns
+        -------
+        (delta_hat, sigma_tx)
+            sample percentage change of prevalence and corresponding transformed standard error
+        """
+
+        mu_x = c_x / n_x
+        mu_y = c_y / n_y
+        sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
+        sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
+
+        sigma2_tx = (sigma2_y / (n_y * mu_x**2)) + (
+            mu_y**2 * sigma2_x / (n_x * mu_x**4)
+        )
+
+        return ((mu_y / mu_x) - 1), np.sqrt(sigma2_tx)
 
 
-def transform_data(
+def transform_univariate(
     mu: npt.ArrayLike,
     sigma: npt.ArrayLike,
+    n: npt.ArrayLike,
     transform: str,
     method: str = "delta",
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Transform data from one space to another.
+    """Transform univariate data from one space to another.
 
     Transform data, in the form of sample statistics and their standard
     errors, from one space to another using a given transform function.
@@ -162,7 +245,7 @@ def transform_data(
         Standard errors.
     transform : {'log', 'logit', 'exp', 'expit'}
         Transform function.
-    method : {'delta'}, optional
+    method : {'delta'}
         Method used to transform data.
 
     Returns
@@ -173,139 +256,116 @@ def transform_data(
         Standard errors in the transform space.
 
     """
+
     mu, sigma = np.array(mu), np.array(sigma)
-    _check_input(method, transform, mu, sigma)
-    if method == "delta":
-        return delta_method(mu, sigma, transform)
+    _check_input(mu, sigma, n)
+    match method:
+        case "delta":
+            transformer = FirstOrder(transform)
+            return transformer(mu, sigma, n)
+        case _:
+            raise ValueError(f"Invalid method '{method}'.")
 
 
-def delta_method(
-    mu: npt.ArrayLike, sigma: npt.ArrayLike, transform: str
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Transform data using the delta method.
-
-    Transform data, in the form of sample statistics and their standard
-    errors, from one space to another using a given transform function
-    and the delta method. No assumptions are made about the underlying
-    distributions of the given data.
-
-    Parameters
-    ----------
-    mu : array_like
-        Sample statistics.
-    sigma : array_like
-        Standard errors.
-    transform : {'log', 'logit', 'exp', 'expit'}
-        Transform function.
-
-    Returns
-    -------
-    mu_trans : numpy.ndarray
-        Sample statistics in the transform space.
-    sigma_trans : numpy.ndarray
-        Standard errors in the transform space.
-
-    Notes
-    -----
-    The delta method expands a function of a random variable about its
-    mean with a one-step Taylor approximation and then takes the
-    variance.
-
-    """
-    mu, sigma = np.array(mu), np.array(sigma)
-    _check_input("delta", transform, mu, sigma)
-    transformer = FirstOrder(transform)
-    return transformer(mu, sigma)
-
-
-def transform_percentage_change_experiment(
-    x_vec: npt.ArrayLike, y_vec: npt.ArrayLike
-) -> Tuple[float, float]:
-    """percentage change with transformed standard error
-
-    Parameters
-    ----------
-    x_vec : array_like
-        observations from first sample
-    y_vec : array_like
-        observations from second sample
-
-    Returns
-    -------
-    p_hat : float
-        bias corrected percentage change
-    sigma_trans : float
-        standard error in the transformed space
-
-    Raises
-    ------
-    ValueError
-        covariance is not possible to calculate when x and y are different lengths
-    """
-    if len(x_vec) != len(y_vec):
-        raise ValueError("x_vec must be the same length as y_vec")
-
-    mu_x, mu_y = np.mean(x_vec), np.mean(y_vec)
-    cov = np.cov(x_vec, y_vec)
-    sigma2_x, sigma2_y, sigma_xy = cov[0, 0], cov[1, 1], cov[0, 1]
-
-    delta_hat = (mu_y - mu_x) / mu_x
-
-    sigma_trans = (
-        (sigma2_y / mu_x**2)
-        - (2 * mu_y * sigma_xy / (mu_x**3))
-        + (mu_y**2 * sigma2_x / (mu_x**4))
-    )
-
-    return delta_hat, np.sqrt(sigma_trans)
-
-
-def handle_input_pct(c_x, n_x, c_y, n_y):
-    """helper function to convert to numpy arrays"""
-    return np.array([c_x]), np.array([n_x]), np.array([c_y]), np.array([n_y])
-
-
-def transform_percentage_change(
+def transform_bivariate(
     c_x: npt.ArrayLike,
     n_x: npt.ArrayLike,
     c_y: npt.ArrayLike,
     n_y: npt.ArrayLike,
+    transform: str,
+    method: str = "delta",
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """percentage change variance transformation for incidence data
+    """Transform bivariate data to a univariate space
+
+    Transform data, in the form of counts and sample size from 2 groups,
+    to point estimates and appropriate standard errors using a given transform
+    function. No assumptions are made about the underlying distributions of
+    the data.
 
     Parameters
     ----------
     c_x : npt.ArrayLike
-        incidence counts in first sample
+        _description_
     n_x : npt.ArrayLike
-        sample size(s) of first sample
+        _description_
     c_y : npt.ArrayLike
-        incidence counts in second sample
+        _description_
     n_y : npt.ArrayLike
-        sample size(s) of second sample
+        _description_
+    transform : str
+        _description_
+    method : str, optional
+        _description_, by default "delta"
 
     Returns
     -------
-    (delta_hat, sigma_tx)
-        sample percentage change of prevalence and corresponding transformed standard error
+    Tuple[np.ndarray, np.ndarray]
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
     """
-    c_x, n_x, c_y, n_y = handle_input_pct(c_x, n_x, c_y, n_y)
 
-    mu_x = c_x / n_x
-    mu_y = c_y / n_y
-    sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
-    sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
-
-    # ruff makes this really ugly for some reason
-    sigma2_tx = (sigma2_y / (n_y * mu_x**2)) + (
-        mu_y**2 * sigma2_x / (n_x * mu_x**4)
+    c_x, n_x, c_y, n_y = (
+        np.array(c_x),
+        np.array(n_x),
+        np.array(c_y),
+        np.array(n_y),
     )
+    match method:
+        case "delta":
+            transformer = FirstOrderBivariate(transform)
+            return transformer(c_x, n_x, c_y, n_y)
+        case _:
+            raise ValueError(f"Invalid method '{method}'.")
 
-    return ((mu_y / mu_x) - 1), np.sqrt(sigma2_tx)
+
+# def transform_percentage_change_experiment(
+#     x_vec: npt.ArrayLike, y_vec: npt.ArrayLike
+# ) -> Tuple[float, float]:
+#     """percentage change with transformed standard error
+
+#     Parameters
+#     ----------
+#     x_vec : array_like
+#         observations from first sample
+#     y_vec : array_like
+#         observations from second sample
+
+#     Returns
+#     -------
+#     p_hat : float
+#         bias corrected percentage change
+#     sigma_trans : float
+#         standard error in the transformed space
+
+#     Raises
+#     ------
+#     ValueError
+#         covariance is not possible to calculate when x and y are different lengths
+#     """
+#     if len(x_vec) != len(y_vec):
+#         raise ValueError("x_vec must be the same length as y_vec")
+
+#     mu_x, mu_y = np.mean(x_vec), np.mean(y_vec)
+#     cov = np.cov(x_vec, y_vec)
+#     sigma2_x, sigma2_y, sigma_xy = cov[0, 0], cov[1, 1], cov[0, 1]
+
+#     delta_hat = (mu_y - mu_x) / mu_x
+
+#     sigma_trans = (
+#         (sigma2_y / mu_x**2)
+#         - (2 * mu_y * sigma_xy / (mu_x**3))
+#         + (mu_y**2 * sigma2_x / (mu_x**4))
+#     )
+
+#     return delta_hat, np.sqrt(sigma_trans)
 
 
 def _check_input(
-    method: str, transform: str, mu: npt.ArrayLike, sigma: npt.ArrayLike
+    mu: npt.ArrayLike, sigma: npt.ArrayLike, n: npt.ArrayLike
 ) -> None:
     """Run checks on input data.
 
@@ -321,22 +381,8 @@ def _check_input(
         Standard errors.
 
     """
-    _check_method_valid(method)
-    _check_lengths_match(mu, sigma)
-    _check_sigma_positive(sigma)
-
-
-def _check_method_valid(method: str) -> None:
-    """Check that `method` is in METHOD_LIST.
-
-    Parameters
-    ----------
-    method : {'delta'}
-        Method used to transform data.
-
-    """
-    if method not in METHOD_LIST:
-        raise ValueError(f"Invalid method '{method}'.")
+    # _check_lengths_match(mu, sigma)
+    _check_sigma_n_positive(sigma, n)
 
 
 def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
@@ -354,7 +400,7 @@ def _check_lengths_match(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
         raise ValueError("Lengths of mu and sigma don't match.")
 
 
-def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
+def _check_sigma_n_positive(sigma: npt.ArrayLike, n: npt.ArrayLike) -> None:
     """Check that `sigma` is positive.
 
     Parameters
@@ -366,4 +412,8 @@ def _check_sigma_positive(sigma: npt.ArrayLike) -> None:
     if np.any(sigma == 0.0):
         warnings.warn("Sigma vector contains zeros.")
     if np.any(sigma < 0.0):
+        raise ValueError("Sigma values must be positive.")
+    if np.any(n == 0.0):
+        warnings.warn("Sigma vector contains zeros.")
+    if np.any(n < 0.0):
         raise ValueError("Sigma values must be positive.")
