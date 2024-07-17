@@ -62,7 +62,7 @@ class FirstOrder:
 
         .. math::
 
-            \log(mu), \frac{\sigma}{\mu} \cdot \frac{1}{\sqrt{n}}
+            \\log(mu), \\frac{\\sigma}{\\mu} \\cdot \\frac{1}{\\sqrt{n}}
 
         Parameters
         ----------
@@ -86,7 +86,7 @@ class FirstOrder:
 
         .. math::
 
-            \log(\frac{\mu}{1 - \mu}), \frac{\sigma}{\mu \cdot (1 - \mu)} \cdot \frac{1}{\sqrt{n}}
+            \\log(\\frac{\\mu}{1 - \\mu}), \\frac{\\sigma}{\\mu \\cdot (1 - \\mu)} \\cdot \\frac{1}{\\sqrt{n}}
 
         Parameters
         ----------
@@ -110,7 +110,7 @@ class FirstOrder:
 
         .. math::
 
-            \exp(\mu), \sigma \cdot \exp(\mu) \cdot \frac{1}{\sqrt{n}}
+            \\exp(\\mu), \\sigma \\cdot \\exp(\\mu) \\cdot \\frac{1}{\\sqrt{n}}
 
         Parameters
         ----------
@@ -134,7 +134,7 @@ class FirstOrder:
 
         .. math::
 
-            \frac{1}{1 + \exp(-\mu)}, \sigma \cdot \frac{\exp(\mu)}{(1 + \exp(\mu))^2} \cdot \frac{1}{\sqrt{n}}
+            \\frac{1}{1 + \\exp(-\\mu)}, \\sigma \\cdot \\frac{\\exp(\\mu)}{(1 + \\exp(\\mu))^2} \\cdot \\frac{1}{\\sqrt{n}}
 
         Parameters
         ----------
@@ -192,7 +192,7 @@ class FirstOrderBivariate:
 
         .. math::
 
-            \frac{p_y}{p_x} - 1, \sqrt{\frac{\sigma_y^2}{n_y\mu_x^2} + \frac{\mu_y^2\sigma_x^2}{n_x\mu_x^4}}
+            \\frac{p_y}{p_x} - 1, \\sqrt{\\frac{\\sigma_y^2}{n_y\\mu_x^2} + \\frac{\\mu_y^2\\sigma_x^2}{n_x\\mu_x^4}}
 
         Parameters
         ----------

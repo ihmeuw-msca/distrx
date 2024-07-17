@@ -32,7 +32,7 @@ The first step is to import the required function from the distrx package.
 
 .. code-block:: python
 
-    from distrx import transform_univariate
+    from distrx import transform_bivariate
 
 Different transformation functions can be chosen through specifying a string parameter of which
 transform you would like to apply to your data. In this case, it is the following.
@@ -47,4 +47,5 @@ transform you would like to apply to your data. In this case, it is the followin
 
 ``mu_tx`` and ``sigma_tx`` are simply the percentage change for each county and their corresponding
 standard errors, respectively. ``sigma_tx`` has already been scaled the appropriate sample size so
-we **should not** scale it additionally to obtain a confidence interval.
+we **should not** scale it additionally with some function of othe sample size to obtain a
+confidence interval.
