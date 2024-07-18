@@ -84,7 +84,7 @@ def test_delta_result(transform):
     mu = np.random.uniform(0.1, 1.0, size=10)
     sigma = np.random.uniform(0.1, 1.0, size=10)
     mu_ref = UNIVARIATE_TRANSFORM_DICT[transform][0](mu)
-    sigma_ref = sigma * UNIVARIATE_TRANSFORM_DICT[transform][1](mu)
+    sigma_ref = sigma * UNIVARIATE_TRANSFORM_DICT[transform][1](mu) / np.sqrt(N)
     mu_trans, sigma_trans = transform_univariate(mu, sigma, N, transform)
     assert np.allclose(mu_trans, mu_ref)
     assert np.allclose(sigma_trans, sigma_ref)
