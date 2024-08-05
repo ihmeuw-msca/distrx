@@ -65,57 +65,37 @@ class FirstOrderBivariate:
 
     def __call__(
         self,
-        c_x: npt.ArrayLike,
-        n_x: npt.ArrayLike,
-        c_y: npt.ArrayLike,
-        n_y: npt.ArrayLike,
-        counts: bool = True,
+        mu_x: npt.ArrayLike,
+        sigma_x: npt.ArrayLike,
+        mu_y: npt.ArrayLike,
+        sigma_y: npt.ArrayLike,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        if counts:
-            mu_x, sigma2_x, mu_y, sigma2_y = self.process_counts(
-                c_x, n_x, c_y, n_y
-            )
-        else:
-            raise NotImplementedError
-
         match self.operation:
             case "sum":
-                return self.sum(mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y)
-                # return self.percentage_change_trans(c_x, n_x, c_y, n_y)
+                return self.sum(mu_x, sigma_x, mu_y, sigma_y)
             case "difference":
-                return self.diff(mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y)
+                return self.diff(mu_x, sigma_x, mu_y, sigma_y)
             case "product":
-                return self.prod(mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y)
+                return self.prod(mu_x, sigma_x, mu_y, sigma_y)
             case "quotient":
-                return self.quotient(mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y)
+                return self.quotient(mu_x, sigma_x, mu_y, sigma_y)
             case _:
                 raise ValueError(f"Invalid transform '{self.transform}'.")
 
-    def process_counts(self, c_x, n_x, c_y, n_y):
-        mu_x = c_x / n_x
-        mu_y = c_y / n_y
-        sigma2_x = (c_x * (1 - mu_x) ** 2 + (n_x - c_x) * mu_x**2) / (n_x - 1)
-        sigma2_y = (c_y * (1 - mu_y) ** 2 + (n_y - c_y) * mu_y**2) / (n_y - 1)
-
-        return mu_x, sigma2_x, mu_y, sigma2_y
-
-    def sum(self, mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y):
-        sigma2_tx = sigma2_x / n_x + sigma2_y / n_y
+    def sum(self, mu_x, sigma_x, mu_y, sigma_y):
+        sigma2_tx = sigma_x**2 + sigma_y**2
         return mu_x + mu_y, np.sqrt(sigma2_tx)
 
-    def diff(self, mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y):
-        sigma2_tx = sigma2_x / n_x + sigma2_y / n_y
+    def diff(self, mu_x, sigma_x, mu_y, sigma_y):
+        sigma2_tx = sigma_x**2 + sigma_y**2
         return mu_x - mu_y, np.sqrt(sigma2_tx)
 
-    def prod(self, mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y):
-        sigma2_tx = mu_y**2 * sigma2_x / n_x + mu_x**2 * sigma2_y / n_y
+    def prod(self, mu_x, sigma_x, mu_y, sigma_y):
+        sigma2_tx = mu_y**2 * sigma_x**2 + mu_x**2 * sigma_y**2
         return mu_x * mu_y, np.sqrt(sigma2_tx)
 
-    def quotient(self, mu_x, sigma2_x, n_x, mu_y, sigma2_y, n_y):
-        sigma2_tx = (sigma2_y / (n_y * mu_x**2)) + (
-            mu_y**2 * sigma2_x / (n_x * mu_x**4)
-        )
-
+    def quotient(self, mu_x, sigma_x, mu_y, sigma_y):
+        sigma2_tx = (sigma_y**2 / mu_x**2) + (mu_y**2 * sigma_x**2 / mu_x**4)
         return mu_y / mu_x, np.sqrt(sigma2_tx)
 
 
@@ -152,7 +132,7 @@ def transform_univariate(
 
     """
 
-    mu, sigma = np.array(mu), np.array(sigma)
+    mu, sigma = np.atleast_1d(np.array(mu)), np.atleast_1d(np.array(sigma))
     _check_input(mu, sigma)
     match method:
         case "delta":
@@ -163,10 +143,10 @@ def transform_univariate(
 
 
 def transform_bivariate(
-    c_x: npt.ArrayLike,
-    n_x: npt.ArrayLike,
-    c_y: npt.ArrayLike,
-    n_y: npt.ArrayLike,
+    mu_x: npt.ArrayLike,
+    sigma_x: npt.ArrayLike,
+    mu_y: npt.ArrayLike,
+    sigma_y: npt.ArrayLike,
     transform: str,
     method: str = "delta",
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -203,27 +183,35 @@ def transform_bivariate(
         _description_
     """
 
-    c_x, n_x, c_y, n_y = (
-        np.array(c_x),
-        np.array(n_x),
-        np.array(c_y),
-        np.array(n_y),
+    mu_x, sigma_x, mu_y, sigma_y = (
+        np.array(mu_x),
+        np.array(sigma_x),
+        np.array(mu_y),
+        np.array(sigma_y),
     )
     match method:
         case "delta":
             match transform:
                 case "percentage_change":
                     pest, sigma = FirstOrderBivariate("quotient")(
-                        c_x, n_x, c_y, n_y
+                        mu_x, sigma_x, mu_y, sigma_y
                     )
                     return pest - 1, sigma
                 case "ratio":
                     pest, sigma = FirstOrderBivariate("quotient")(
-                        c_x, n_x, c_y, n_y
+                        mu_x, sigma_x, mu_y, sigma_y
                     )
                     return pest, sigma
         case _:
             raise ValueError(f"Invalid method '{method}'.")
+
+
+### HELPER FUNCTIONS
+def process_counts(count, n):
+    mu = count / n
+    sigma2 = (count * (1 - mu) ** 2 + (n - count) * mu**2) / (n - 1)
+
+    return mu, np.sqrt(sigma2 / n)
 
 
 def _check_input(mu: npt.ArrayLike, sigma: npt.ArrayLike) -> None:
