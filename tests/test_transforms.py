@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from distrx.transforms import transform_bivariate, transform_univariate
+from distrx.transforms import (
+    process_counts,
+    transform_bivariate,
+    transform_univariate,
+)
 
 UNIVARIATE_TRANSFORM_DICT = {
     "log": [np.log, lambda x: 1.0 / x],
@@ -90,23 +94,30 @@ def test_delta_result(transform):
     assert np.allclose(sigma_trans, sigma_ref)
 
 
-# TODO: DEPRECATE
-# def test_percentage_change():
-#     x = np.random.normal(1, 0.1, 1000)
-#     y = np.random.normal(1.1, 0.1, 1000)
-#     z = np.random.normal(1, 0.1, 1001)
-#     p, sigma = transform_percentage_change_experiment(x, y)
-#     assert 0 < p and p < 1
-#     assert 0 < sigma and sigma < 1
-#     with pytest.raises(ValueError):
-#         transform_percentage_change_experiment(x, z)
+# TODO: MAYBE DO NOT DEPRECATE
+def test_percentage_change():
+    x = np.random.normal(1, 0.1, 1000)
+    y = np.random.normal(1.1, 0.1, 1000)
+    # z = np.random.normal(1, 0.1, 1001)
+    p, sigma = transform_bivariate(
+        np.mean(x),
+        np.std(x) / np.sqrt(len(x)),
+        np.mean(y),
+        np.std(y) / np.sqrt(len(y)),
+        "percentage_change",
+    )
+    assert -1 < p and p < np.inf
+    assert 0 < sigma and sigma < 1
 
 
 def test_percentage_change_counts():
     x = np.random.choice([0, 1], size=1000, p=[0.1, 0.9])
     y = np.random.choice([0, 1], size=1100, p=[0.2, 0.8])
+
+    mu_x, sigma_x = process_counts((x == 1).sum(), len(x))
+    mu_y, sigma_y = process_counts((y == 1).sum(), len(y))
     mu, sigma = transform_bivariate(
-        (x == 1).sum(), len(x), (y == 1).sum(), len(y), "percentage_change"
+        mu_x, sigma_x, mu_y, sigma_y, "percentage_change"
     )
     assert -1 <= mu and mu < np.inf
     assert 0 < sigma and sigma < 1

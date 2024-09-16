@@ -28,7 +28,18 @@ in various state counties. The data may look something like the following,
 
 and our goal is to find the percentage change in the prevalence of cancer with its appropriate SE.
 
-The first step is to import the required function from the distrx package.
+Since we have counts and distrx expects mean/standard error (SE), we must first convert the data
+appropriately. Counts data is common at IHME, so a function is provided to return sample mean and
+SE given incidence count and sample size. We can import it and save the necessary variables like so.
+
+.. code-block:: python
+
+    from distrx import process_counts
+    mu_x, sigma_x = process_counts(cases_1, sample_1)
+    mu_y, sigma_y = process_counts(cases_2, sample_2)
+
+
+Then, we can import the required function from the distrx package.
 
 .. code-block:: python
 
@@ -39,13 +50,12 @@ transform you would like to apply to your data. In this case, it is the followin
 
 .. code-block:: python
 
-    mu_tx, sigma_tx = transform_bivariate(c_x=df["cases_1"],
-                                          n_x=df["sample_1"],
-                                          c_y=df["cases_2"],
-                                          n_y=df["sample_2"],
+    mu_tx, sigma_tx = transform_bivariate(mu_x=mu_x,
+                                          sigma_x=sigma_x,
+                                          mu_y=mu_y,
+                                          sigma_y=sigma_y,
                                           transform="percentage_change")
 
 ``mu_tx`` and ``sigma_tx`` are simply the percentage change for each county and their corresponding
-standard errors, respectively. ``sigma_tx`` has already been scaled the appropriate sample size so
-we **should not** scale it additionally with some function of othe sample size to obtain a
-confidence interval.
+standard errors, respectively. If a CI for the mean is desired, simply use
+``mu_tx +/- Q * sigma_tx``.

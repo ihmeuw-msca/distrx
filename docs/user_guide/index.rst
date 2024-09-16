@@ -5,8 +5,8 @@ User guide
    :hidden:
    :numbered:
 
-   simple_transformations
-   percentage_change
+   univariate
+   bivariate
 
 .. note::
 

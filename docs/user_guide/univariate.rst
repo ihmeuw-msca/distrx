@@ -16,11 +16,11 @@ order Taylor expansion of the transformation function.
 Example: Log Transform
 ----------------------
 
-Suppose that we have some means and standard errors (SEs) of systolic blood pressure (SBP) from
+Suppose that we have some means and standard deviations (SDs) of systolic blood pressure (SBP) from
 several different samples. The data may look something like the following,
 
 .. csv-table::
-   :header: mean, se, n
+   :header: mean, SD, n
    :widths: 10, 10, 10
    :align: center
 
@@ -30,9 +30,18 @@ several different samples. The data may look something like the following,
    124, 15, 226
    134, 7, 509
 
-and our goal is to obtain the appropriate SEs for the data after applying the log transform.
+and our goal is to obtain the appropriate standard errors (SEs) for the mean after applying the log
+transform.
 
-The first step is to import the required function from the distrx package.
+Since we are interested in the transformed SEs and *not* the transformed SDs, we must provide the
+SEs to distrx. **If you already have SEs and are performing the same task, you should skip this
+step!**
+
+.. code-block:: python
+
+    df["SE"] = df["SD"] / df["n"]
+
+Now, import the appropriate function from distrx.
 
 .. code-block:: python
 
@@ -44,10 +53,9 @@ transform you would like to apply to your data. In this case, it is the followin
 .. code-block:: python
 
     mu_tx, sigma_tx = transform_univariate(mu=df["means"],
-                                           sigma=df["se"],
-                                           n=df["n"],
+                                           sigma=df["SE"],
                                            transform="log")
 
 ``mu_tx`` and ``sigma_tx`` are simply the means with the transformation function applied and their
-corresponding standard errors, respectively. ``sigma_tx`` has already been scaled by :math:`\sqrt{n}`
-so the we **should not** scale it by square root of the sample size to obtain a confidence interval.
+appropriately transformed standard errors, respectively. If a CI for the mean is desired, simply
+use ``mu_tx +/- Q * sigma_tx``.
